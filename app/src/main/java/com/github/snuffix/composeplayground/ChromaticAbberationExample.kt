@@ -47,7 +47,7 @@ const val ShaderSource = """
 """
 
 @Composable
-fun ChromaticAbberationExample(photo: Bitmap) {
+fun ChromaticAberrationExample(photo: Bitmap) {
     val shader = remember {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             RuntimeShader(ShaderSource)
