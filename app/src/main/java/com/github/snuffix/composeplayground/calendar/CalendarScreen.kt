@@ -1,8 +1,8 @@
 package com.github.snuffix.composeplayground.calendar
 
+import android.R.attr.radius
+import android.graphics.DashPathEffect
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -12,55 +12,53 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableFloatStateOf
-import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.PathEffect
+import androidx.compose.ui.graphics.drawscope.DrawScope
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import java.time.LocalDate
 import java.time.temporal.TemporalAdjusters
 
-var data = (0..2).flatMap { year ->
-    List(11) { month ->
-        val firstDayOfMonth = LocalDate.now().withMonth(month + 1).plusYears(year.toLong())
-            .with(TemporalAdjusters.firstDayOfMonth())
-        val lastDayOfMonth = LocalDate.now().withMonth(month + 1).plusYears(year.toLong())
-            .with(TemporalAdjusters.lastDayOfMonth())
 
-        CalendarData(
-            firstDayOfMonth = firstDayOfMonth,
-            lastDayOfMonth = lastDayOfMonth,
-            index = month + year * 12,
-            name = "${firstDayOfMonth.month} ${firstDayOfMonth.year}"
-        )
-    }
+// Mock data
+var months = (0..36).map { month ->
+    val firstDayOfMonth =
+        LocalDate.now().plusMonths(month.toLong()).with(TemporalAdjusters.firstDayOfMonth())
+    val lastDayOfMonth =
+        LocalDate.now().plusMonths(month.toLong()).with(TemporalAdjusters.lastDayOfMonth())
+
+    MonthData(
+        firstDayOfMonth = firstDayOfMonth,
+        lastDayOfMonth = lastDayOfMonth,
+    )
 }
 
 @Composable
 fun CalendarScreen() {
-    var pivotFractionX by remember { mutableFloatStateOf(0f) }
-    var pivotFractionY by remember { mutableFloatStateOf(0f) }
-    var selectedDateNumber by remember { mutableIntStateOf(0) }
+    var selectedMonthOffsetFraction by remember { mutableStateOf(Offset(0.5f, 0.5f)) }
+    var selectedMonthKey by remember { mutableStateOf("") }
     var selectedTab by remember { mutableStateOf(CalendarTab.Month) }
-    var daysOfWeekRowAlpha =
-        animateFloatAsState(targetValue = if (selectedTab == CalendarTab.Month) 1f else 0f)
 
-    val data = remember { data }
+    val data = remember { months }
 
     Column {
         CalendarTabs(
             modifier = Modifier
                 .align(Alignment.CenterHorizontally)
                 .padding(16.dp),
-            selectedTab = selectedTab, onTabSelected = {
-                pivotFractionX = 0f
-                pivotFractionY = 0f
-                selectedTab = it
+            selectedTab = selectedTab, onTabSelected = { tab ->
+                selectedMonthOffsetFraction = Offset(0.5f, 0.5f)
+                selectedTab = tab
             })
 
         Column {
@@ -84,31 +82,77 @@ fun CalendarScreen() {
                     }
                 }
             }
+
+            val selectedDays = remember { mutableStateMapOf<String, Set<Int>>() }
+            val onDaySelected: (MonthData, DayNumber) -> Unit = { month, day ->
+                selectedDays[month.key] = selectedDays[month.key]?.plus(day) ?: setOf(day)
+            }
+            val onDrawBehindDay: DrawScope.(Float, Float, MonthData, DayNumber, Float) -> Unit =
+                { width, height, month, dayNumber, anim ->
+                    if (selectedDays[month.key]?.contains(dayNumber) == true) {
+                        val NUM_DASHES = 30f
+                        val DASH_PORTION = 0.75f
+                        val GAP_PORTION = 0.25f
+                        val circumference = 2f * Math.PI * width/2f
+                        val dashPlusGapSize = (circumference / NUM_DASHES).toFloat()
+
+                        val padding = 4.dp.toPx()
+
+                        drawArc(
+                            startAngle = 90f,
+                            sweepAngle = (360f) * anim,
+                            color = Color.Red,
+                            useCenter = false,
+                            topLeft = Offset(padding, padding),
+                            size = Size(width - padding * 2, height - padding * 2),
+                            style = Stroke(
+                                width = 2.dp.toPx(),
+                                cap = Stroke.DefaultCap,
+                                pathEffect = PathEffect.dashPathEffect( floatArrayOf(dashPlusGapSize * DASH_PORTION, dashPlusGapSize * GAP_PORTION), 0f)
+                            )
+                        )
+
+//                        drawCircle(
+//                            center = Offset(width / 2, height / 2),
+//                            color = Color.Red,
+//                            radius = (width / 2f) * anim,
+//                            style = Stroke(
+//                                width = 2.dp.toPx(),
+//                                cap = Stroke.DefaultCap,
+//                                pathEffect = PathEffect.dashPathEffect( floatArrayOf(dashPlusGapSize * DASH_PORTION, dashPlusGapSize * GAP_PORTION), 0f)
+//                            )
+//                        )
+                    }
+                }
+
             when (selectedTab) {
                 CalendarTab.Month -> {
                     MonthsCalendarView(
-                        calendarData = CalendarList(data),
+                        calendar = Calendar(data),
                         calendarModifier = Modifier.fillMaxWidth(),
-                        pivotFractionX = pivotFractionX,
-                        pivotFractionY = pivotFractionY,
-                        selectedDateNumber = selectedDateNumber
+                        pivotFractionX = selectedMonthOffsetFraction.x,
+                        pivotFractionY = selectedMonthOffsetFraction.y,
+                        selectedMonthKey = selectedMonthKey,
+                        onDaySelected = onDaySelected,
+                        onDrawBehindDay = onDrawBehindDay,
                     )
                 }
 
                 CalendarTab.Year -> {
                     YearsCalendarView(
-                        calendarData = CalendarList(data),
+                        calendarData = Calendar(data),
                         calendarModifier = Modifier.fillMaxWidth(),
                         onMonthSelected = { data, offset ->
-                            selectedDateNumber = data.index
-                            pivotFractionX = offset.x
-                            pivotFractionY = offset.y
+                            selectedMonthKey = data.key
+                            selectedMonthOffsetFraction = offset
                             selectedTab = CalendarTab.Month
-                        }
+                        },
+                        onDrawBehindDay = onDrawBehindDay,
                     )
                 }
 
                 CalendarTab.Day -> {
+                    // TODO
                 }
             }
         }

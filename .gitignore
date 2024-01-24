@@ -9,6 +9,7 @@ local.properties
 xcuserdata
 /keys/
 /app/ios/Pods/
+/app/release
 
 # Idea
 **/.idea/*
