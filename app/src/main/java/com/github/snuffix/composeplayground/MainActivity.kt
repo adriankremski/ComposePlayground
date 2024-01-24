@@ -116,7 +116,7 @@ class MainActivity : ComponentActivity() {
                         }
 
                         Screen.LazyListFooterHeader -> {
-                            LazyListFooterExample()
+                            LazyListFooterScreen()
                         }
 
                         Screen.Shader -> {

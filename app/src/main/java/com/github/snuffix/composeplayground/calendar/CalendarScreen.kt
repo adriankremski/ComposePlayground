@@ -1,10 +1,16 @@
 package com.github.snuffix.composeplayground.calendar
 
+import android.widget.Toast
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.wrapContentWidth
+import androidx.compose.foundation.lazy.LazyListState
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.Divider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -13,6 +19,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -22,8 +29,10 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import kotlinx.coroutines.launch
 import java.time.LocalDate
 import java.time.temporal.TemporalAdjusters
 
@@ -47,17 +56,41 @@ fun CalendarScreen() {
     var selectedMonthKey by remember { mutableStateOf("") }
     var selectedTab by remember { mutableStateOf(CalendarTab.Month) }
 
-    val data = remember { months }
+    val calendar = remember { Calendar(today = LocalDate.now(), months = months) }
+    val monthsListState = rememberLazyListState()
 
     Column {
-        CalendarTabs(
-            modifier = Modifier
-                .align(Alignment.CenterHorizontally)
-                .padding(16.dp),
-            selectedTab = selectedTab, onTabSelected = { tab ->
-                selectedMonthOffsetFraction = Offset(0.5f, 0.5f)
-                selectedTab = tab
-            })
+        var displayCurrentDayButton by remember { mutableStateOf(false) }
+
+        Box(modifier = Modifier.fillMaxWidth()) {
+            CalendarTabs(
+                modifier = Modifier
+                    .align(Alignment.Center)
+                    .padding(16.dp),
+                selectedTab = selectedTab, onTabSelected = { tab ->
+                    selectedMonthOffsetFraction = Offset(0.5f, 0.5f)
+                    selectedTab = tab
+                })
+
+            if (displayCurrentDayButton) {
+                val scope = rememberCoroutineScope()
+                Text(
+                    text = "Today",
+                    modifier = Modifier
+                        .align(Alignment.CenterEnd)
+                        .padding(8.dp)
+                        .clickable {
+                            scope.launch {
+                                monthsListState.scrollToItem(calendar.months.indexOfFirst {
+                                    it.firstDayOfMonth.month == calendar.today.month
+                                })
+                            }
+                        },
+                    textAlign = TextAlign.Center,
+                    style = MaterialTheme.typography.titleMedium
+                )
+            }
+        }
 
         Column {
             Column {
@@ -66,7 +99,8 @@ fun CalendarScreen() {
                 ) {
                     Column {
                         Row(
-                            modifier = Modifier.fillMaxWidth()
+                            modifier = Modifier
+                                .fillMaxWidth()
                         ) {
                             listOf("M", "T", "W", "T", "F", "S", "S").forEach {
                                 DayOfWeekTextView(
@@ -94,54 +128,77 @@ fun CalendarScreen() {
                         val dashesCount = 30f
                         val dashPortion = 0.75f
                         val gapPortion = 0.25f
-                        val circumference = 2f * Math.PI * width/2f
+                        val circumference = 2f * Math.PI * width / 2f
                         val dashPlusGapSize = (circumference / dashesCount).toFloat()
 
                         val padding = 4.dp.toPx()
 
-                        drawArc(
-                            startAngle = 90f,
-                            sweepAngle = (360f) * animationValue,
-                            color = Color.Red,
-                            useCenter = false,
-                            topLeft = Offset(padding, padding),
-                            size = Size(width - padding * 2, height - padding * 2),
-                            style = Stroke(
-                                width = 2.dp.toPx(),
-                                cap = Stroke.DefaultCap,
-                                pathEffect = PathEffect.dashPathEffect( floatArrayOf(dashPlusGapSize * dashPortion, dashPlusGapSize * gapPortion), 0f)
-                            )
-                        )
-//                        Different animation
-//                        drawCircle(
-//                            center = Offset(width / 2, height / 2),
-//                            color = Color.Red,
-//                            radius = (width / 2f) * anim,
-//                            style = Stroke(
-//                                width = 2.dp.toPx(),
-//                                cap = Stroke.DefaultCap,
-//                                pathEffect = PathEffect.dashPathEffect( floatArrayOf(dashPlusGapSize * DASH_PORTION, dashPlusGapSize * GAP_PORTION), 0f)
-//                            )
-//                        )
+                        val selectionSize = Size(width - padding * 2, height - padding * 2)
+                        val topLeft = Offset(padding, padding)
+
+                        when (dayNumber) {
+                            in 0..10 -> {
+                                drawArc(
+                                    startAngle = 90f,
+                                    sweepAngle = (360f) * animationValue,
+                                    color = Color.Red,
+                                    useCenter = false,
+                                    topLeft = topLeft,
+                                    size = selectionSize,
+                                    style = Stroke(
+                                        width = 2.dp.toPx(),
+                                        cap = Stroke.DefaultCap,
+                                        pathEffect = PathEffect.dashPathEffect(
+                                            floatArrayOf(
+                                                dashPlusGapSize * dashPortion,
+                                                dashPlusGapSize * gapPortion
+                                            ), 0f
+                                        )
+                                    )
+                                )
+                            }
+
+                            else -> {
+                                drawCircle(
+                                    center = Offset(width / 2, height / 2),
+                                    color = Color.Red,
+                                    radius = selectionSize.width / 2f * animationValue,
+                                    style = Stroke(
+                                        width = 2.dp.toPx(),
+                                        cap = Stroke.DefaultCap,
+                                        pathEffect = PathEffect.dashPathEffect(
+                                            floatArrayOf(
+                                                dashPlusGapSize * dashPortion,
+                                                dashPlusGapSize * gapPortion
+                                            ), 0f
+                                        )
+                                    )
+                                )
+                            }
+                        }
                     }
                 }
 
             when (selectedTab) {
                 CalendarTab.Month -> {
                     MonthsCalendarView(
-                        calendar = Calendar(data),
+                        calendar = calendar,
                         calendarModifier = Modifier.fillMaxWidth(),
                         pivotFractionX = selectedMonthOffsetFraction.x,
                         pivotFractionY = selectedMonthOffsetFraction.y,
                         selectedMonthKey = selectedMonthKey,
                         onDaySelected = onDaySelected,
                         onDrawBehindDay = onDrawBehindDay,
+                        onCurrentMonthVisibilityChanged = { visible ->
+                            displayCurrentDayButton = !visible
+                        },
+                        monthsListState = monthsListState
                     )
                 }
 
                 CalendarTab.Year -> {
                     YearsCalendarView(
-                        calendarData = Calendar(data),
+                        calendarData = calendar,
                         calendarModifier = Modifier.fillMaxWidth(),
                         onMonthSelected = { data, offset ->
                             selectedMonthKey = data.key
@@ -150,10 +207,6 @@ fun CalendarScreen() {
                         },
                         onDrawBehindDay = onDrawBehindDay,
                     )
-                }
-
-                CalendarTab.Day -> {
-                    // TODO
                 }
             }
         }

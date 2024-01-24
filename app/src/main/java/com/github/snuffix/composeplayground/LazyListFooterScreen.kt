@@ -23,7 +23,7 @@ import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
 
 @Composable
-fun LazyListFooterExample() {
+fun LazyListFooterScreen(itemCount: Int = 10) {
     Column {
         var itemsCount by remember { mutableIntStateOf(1) }
         var items by remember { mutableStateOf(0..itemsCount) }

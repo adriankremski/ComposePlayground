@@ -32,7 +32,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 
 enum class CalendarTab {
-    Month, Year, Day
+    Month, Year
 }
 
 val tabsBackgroundColor = Color(0xFFd4d4d4)
@@ -48,7 +48,6 @@ fun CalendarTabs(
         targetValue = when (selectedTab) {
             CalendarTab.Month -> 0.dp
             CalendarTab.Year -> tabWidth
-            CalendarTab.Day -> tabWidth * 2
         },
         animationSpec = tween(easing = LinearEasing),
         label = "indicatorAnim",

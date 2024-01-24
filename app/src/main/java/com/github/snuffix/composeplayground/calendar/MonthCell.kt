@@ -27,6 +27,7 @@ import androidx.compose.ui.layout.layout
 import androidx.compose.ui.layout.onPlaced
 import androidx.compose.ui.layout.positionInRoot
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.text.TextStyle
@@ -37,6 +38,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -59,7 +61,7 @@ fun MonthView(
     month: MonthData,
     calendarModifier: Modifier = Modifier,
     dayCellTextSize: TextUnit = 15.sp,
-    dayCellHeight: Dp = 60.dp,
+    cellHeight: Dp = 60.dp,
     monthNameFormatter: (LocalDate) -> String = { "${it.month} ${it.year}" },
     onDrawBehindDay: DrawScope.(Size, MonthData, DayNumber, AnimationValue) -> Unit = { _, _, _, _ -> },
     onDaySelected: ((MonthData, DayNumber) -> Unit)? = null,
@@ -69,29 +71,8 @@ fun MonthView(
     var singleDigitDayLayoutRes by remember { mutableStateOf<TextLayoutResult?>(null) }
     var doubleDigitDayLayoutRes by remember { mutableStateOf<TextLayoutResult?>(null) }
     val textMeasurer = rememberTextMeasurer()
-    val singleDigitText = buildAnnotatedString {
-        withStyle(
-            style = SpanStyle(
-                fontSize = dayCellTextSize,
-                fontWeight = FontWeight.Bold,
-                fontFamily = FontFamily.Default,
-            ),
-        ) {
-            append("1")
-        }
-    }
-
-    val doubleDigitText = buildAnnotatedString {
-        withStyle(
-            style = SpanStyle(
-                fontSize = dayCellTextSize,
-                fontWeight = FontWeight.Bold,
-                fontFamily = FontFamily.Default,
-            ),
-        ) {
-            append("11")
-        }
-    }
+    val singleDigitText = dayCellText("1", dayCellTextSize)
+    val doubleDigitText = dayCellText("11", dayCellTextSize)
 
     Column(
         modifier = modifier
@@ -115,11 +96,10 @@ fun MonthView(
         val firstDayOfMonth = month.firstDayOfMonth
         val lastDateOfMonth = month.lastDayOfMonth
 
-        val firstWeek = firstDayOfMonth.get(WeekFields.ISO.weekOfYear())
         val weeks = overlappingWeeks(start = firstDayOfMonth, end = lastDateOfMonth)
-        val height = dayCellHeight.times(weeks)
+        val height = cellHeight.times(weeks)
 
-        val cellHeightInPix = with(LocalDensity.current) { dayCellHeight.toPx() }.toFloat()
+        val cellHeightInPx = with(LocalDensity.current) { cellHeight.toPx() }.toFloat()
         var cellsData by remember { mutableStateOf<List<DayCellCanvasData>>(listOf()) }
 
         var lastSelectedDay by remember { mutableIntStateOf(-1) }
@@ -169,30 +149,27 @@ fun MonthView(
                 .drawWithCache {
                     val cellWidth = size.width / 7
                     cellsData =
-                        ((firstDayOfMonth.dayOfMonth - 1)..<lastDateOfMonth.dayOfMonth).map { dayOfMonth ->
-                            val week = firstDayOfMonth
-                                .plusDays(dayOfMonth.toLong())
-                                .get(WeekFields.ISO.weekOfYear())
-                            val dayOfWeek =
-                                firstDayOfMonth
-                                    .plusDays(dayOfMonth.toLong())
-                                    .get(WeekFields.ISO.dayOfWeek())
-                            val weekOffset = (week - firstWeek)
-                            val x = cellWidth * (dayOfWeek - 1)
-                            val y = cellHeightInPix * weekOffset
+                        ((firstDayOfMonth.dayOfMonth - 1)..<lastDateOfMonth.dayOfMonth)
+                            .map { dayOfMonth -> firstDayOfMonth.plusDays(dayOfMonth.toLong()) }
+                            .map { dayOfMonth ->
+                                val weekOffset =
+                                    (dayOfMonth.weekOfYear() - firstDayOfMonth.weekOfYear())
 
-                            DayCellCanvasData(
-                                dayOfMonth,
-                                Offset(x, y),
-                                RectF(x, y, x + cellWidth, y + cellHeightInPix)
-                            )
-                        }
+                                val x = cellWidth * (dayOfMonth.dayOfWeek() - 1)
+                                val y = cellHeightInPx * weekOffset
+
+                                DayCellCanvasData(
+                                    dayOfMonth.dayOfMonth - 1, // 0 based
+                                    Offset(x, y),
+                                    RectF(x, y, x + cellWidth, y + cellHeightInPx)
+                                )
+                            }
 
                     val cellPositions = cellsData.map { it.offset }
 
                     onDrawBehind {
-                        for (dayOfMonth in (firstDayOfMonth.dayOfMonth - 1)..<lastDateOfMonth.dayOfMonth) {
-                            val (x, y) = cellPositions[dayOfMonth]
+                        cellPositions.forEachIndexed { dayOfMonth, offset ->
+                            val (x, y) = offset
 
                             this.inset(
                                 left = x,
@@ -201,44 +178,36 @@ fun MonthView(
                                 bottom = 0f
                             ) {
                                 onDrawBehindDay(
-                                    Size(cellWidth, cellHeightInPix),
+                                    Size(cellWidth, cellHeightInPx),
                                     month,
                                     dayOfMonth,
                                     if (dayOfMonth == lastSelectedDay) clickAnim.value else 1f
                                 )
                             }
 
+                            fun drawDayText(textSize: IntSize, dayOfMonth: Int) {
+                                drawText(
+                                    text = dayOfMonth.toString(),
+                                    topLeft = Offset(
+                                        x + cellWidth / 2 - textSize.width / 2,
+                                        y + cellHeightInPx / 2 - textSize.height / 2
+                                    ),
+                                    textMeasurer = textMeasurer,
+                                    style = TextStyle(
+                                        fontSize = dayCellTextSize,
+                                        fontWeight = FontWeight.Bold,
+                                        fontFamily = FontFamily.Default,
+                                    )
+                                )
+                            }
+
                             if (dayOfMonth < 9) {
                                 singleDigitDayLayoutRes?.size?.let {
-                                    drawText(
-                                        text = (dayOfMonth + 1).toString(),
-                                        topLeft = Offset(
-                                            x + cellWidth / 2 - it.width / 2,
-                                            y + cellHeightInPix / 2 - it.height / 2
-                                        ),
-                                        textMeasurer = textMeasurer,
-                                        style = TextStyle(
-                                            fontSize = dayCellTextSize,
-                                            fontWeight = FontWeight.Bold,
-                                            fontFamily = FontFamily.Default,
-                                        )
-                                    )
+                                    drawDayText(it, dayOfMonth + 1) // 0 based
                                 }
                             } else {
                                 doubleDigitDayLayoutRes?.size?.let {
-                                    drawText(
-                                        text = (dayOfMonth + 1).toString(),
-                                        topLeft = Offset(
-                                            x + cellWidth / 2 - it.width / 2,
-                                            y + cellHeightInPix / 2 - it.height / 2
-                                        ),
-                                        textMeasurer = textMeasurer,
-                                        style = TextStyle(
-                                            fontSize = dayCellTextSize,
-                                            fontWeight = FontWeight.Bold,
-                                            fontFamily = FontFamily.Default,
-                                        )
-                                    )
+                                    drawDayText(it, dayOfMonth + 1) // 0 based
                                 }
                             }
                         }
@@ -250,7 +219,20 @@ fun MonthView(
     }
 }
 
+fun dayCellText(text: String, textUnit: TextUnit): AnnotatedString = buildAnnotatedString {
+    withStyle(
+        style = SpanStyle(
+            fontSize = textUnit,
+            fontWeight = FontWeight.Bold,
+            fontFamily = FontFamily.Default,
+        ),
+    ) {
+        append(text)
+    }
+}
+
 fun LocalDate.weekOfYear() = get(WeekFields.ISO.weekOfYear())
+fun LocalDate.dayOfWeek() = get(WeekFields.ISO.dayOfWeek())
 
 fun overlappingWeeks(start: LocalDate, end: LocalDate): Int {
     val firstWeek = start.get(WeekFields.ISO.weekOfYear())

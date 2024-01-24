@@ -50,7 +50,7 @@ fun YearsCalendarView(
                         month = month,
                         calendarModifier = calendarModifier,
                         dayCellTextSize = 10.sp,
-                        dayCellHeight = 20.dp,
+                        cellHeight = 20.dp,
                         monthNameFormatter = { "${it.month}" },
                         onMonthSelected = onMonthSelected,
                         onDrawBehindDay = onDrawBehindDay,
