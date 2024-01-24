@@ -1,7 +1,5 @@
 package com.github.snuffix.composeplayground.calendar
 
-import android.R.attr.radius
-import android.graphics.DashPathEffect
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -87,20 +85,23 @@ fun CalendarScreen() {
             val onDaySelected: (MonthData, DayNumber) -> Unit = { month, day ->
                 selectedDays[month.key] = selectedDays[month.key]?.plus(day) ?: setOf(day)
             }
-            val onDrawBehindDay: DrawScope.(Float, Float, MonthData, DayNumber, Float) -> Unit =
-                { width, height, month, dayNumber, anim ->
+            val onDrawBehindDay: DrawScope.(Size, MonthData, DayNumber, AnimationValue) -> Unit =
+                { size, month, dayNumber, animationValue ->
+                    val width = size.width
+                    val height = size.height
+
                     if (selectedDays[month.key]?.contains(dayNumber) == true) {
-                        val NUM_DASHES = 30f
-                        val DASH_PORTION = 0.75f
-                        val GAP_PORTION = 0.25f
+                        val dashesCount = 30f
+                        val dashPortion = 0.75f
+                        val gapPortion = 0.25f
                         val circumference = 2f * Math.PI * width/2f
-                        val dashPlusGapSize = (circumference / NUM_DASHES).toFloat()
+                        val dashPlusGapSize = (circumference / dashesCount).toFloat()
 
                         val padding = 4.dp.toPx()
 
                         drawArc(
                             startAngle = 90f,
-                            sweepAngle = (360f) * anim,
+                            sweepAngle = (360f) * animationValue,
                             color = Color.Red,
                             useCenter = false,
                             topLeft = Offset(padding, padding),
@@ -108,10 +109,10 @@ fun CalendarScreen() {
                             style = Stroke(
                                 width = 2.dp.toPx(),
                                 cap = Stroke.DefaultCap,
-                                pathEffect = PathEffect.dashPathEffect( floatArrayOf(dashPlusGapSize * DASH_PORTION, dashPlusGapSize * GAP_PORTION), 0f)
+                                pathEffect = PathEffect.dashPathEffect( floatArrayOf(dashPlusGapSize * dashPortion, dashPlusGapSize * gapPortion), 0f)
                             )
                         )
-
+//                        Different animation
 //                        drawCircle(
 //                            center = Offset(width / 2, height / 2),
 //                            color = Color.Red,

@@ -9,9 +9,8 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.height
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.Immutable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -20,6 +19,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawWithCache
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.inset
 import androidx.compose.ui.input.pointer.pointerInput
@@ -43,22 +43,15 @@ import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.launch
 import java.time.LocalDate
 import java.time.temporal.WeekFields
-import java.util.UUID
 
-typealias MonthKey = String
-typealias DayNumber = Int
+typealias AnimationValue = Float
 
-@Immutable
-data class Calendar(
-    val months: List<MonthData>
+data class DayCellCanvasData(
+    val dayOfMonth: Int,
+    val offset: Offset,
+    val rect: RectF
 )
 
-@Immutable
-data class MonthData(
-    val key: MonthKey = UUID.randomUUID().toString(),
-    val firstDayOfMonth: LocalDate,
-    val lastDayOfMonth: LocalDate,
-)
 
 @Composable
 fun MonthView(
@@ -68,11 +61,11 @@ fun MonthView(
     dayCellTextSize: TextUnit = 15.sp,
     dayCellHeight: Dp = 60.dp,
     monthNameFormatter: (LocalDate) -> String = { "${it.month} ${it.year}" },
-    onDrawBehindDay: DrawScope.(Float, Float, MonthData, DayNumber, Float) -> Unit = { _, _, _, _, _ -> },
+    onDrawBehindDay: DrawScope.(Size, MonthData, DayNumber, AnimationValue) -> Unit = { _, _, _, _ -> },
     onDaySelected: ((MonthData, DayNumber) -> Unit)? = null,
     onMonthSelected: (MonthData, Offset) -> Unit,
 ) {
-    var position by remember { mutableStateOf(Offset.Zero) }
+    var calendarFractionPosition by remember { mutableStateOf(Offset.Zero) } // (0,0) = topLeft, (1f,1f) = bottomRight
     var singleDigitDayLayoutRes by remember { mutableStateOf<TextLayoutResult?>(null) }
     var doubleDigitDayLayoutRes by remember { mutableStateOf<TextLayoutResult?>(null) }
     val textMeasurer = rememberTextMeasurer()
@@ -108,7 +101,7 @@ fun MonthView(
 
                 val parentSize = it.parentCoordinates?.size ?: it.size
 
-                position = Offset(
+                calendarFractionPosition = Offset(
                     x = x / parentSize.width.toFloat(),
                     y = y / parentSize.height.toFloat()
                 )
@@ -121,23 +114,15 @@ fun MonthView(
 
         val firstDayOfMonth = month.firstDayOfMonth
         val lastDateOfMonth = month.lastDayOfMonth
-        val cellHeightInPix = with(LocalDensity.current) { dayCellHeight.toPx() }.toFloat()
+
         val firstWeek = firstDayOfMonth.get(WeekFields.ISO.weekOfYear())
-        val weeks =
-            (lastDateOfMonth.get(WeekFields.ISO.weekOfYear()) - firstDayOfMonth.get(
-                WeekFields.ISO.weekOfYear()
-            )) + 1
+        val weeks = overlappingWeeks(start = firstDayOfMonth, end = lastDateOfMonth)
         val height = dayCellHeight.times(weeks)
 
-        data class DayCellCanvasData(
-            val dayOfMonth: Int,
-            val offset: Offset,
-            val rect: RectF
-        )
-
+        val cellHeightInPix = with(LocalDensity.current) { dayCellHeight.toPx() }.toFloat()
         var cellsData by remember { mutableStateOf<List<DayCellCanvasData>>(listOf()) }
 
-        var lastSelectedDay by remember { mutableStateOf(-1) }
+        var lastSelectedDay by remember { mutableIntStateOf(-1) }
 
         val clickAnim = remember { Animatable(0f) }
         val scope = rememberCoroutineScope()
@@ -166,6 +151,7 @@ fun MonthView(
                                     ?.let {
                                         onDaySelected(month, it.dayOfMonth)
                                         lastSelectedDay = it.dayOfMonth
+
                                         scope.launch {
                                             clickAnim.snapTo(0f)
                                             clickAnim.animateTo(
@@ -175,7 +161,7 @@ fun MonthView(
                                         }
                                     }
                             } else {
-                                onMonthSelected(month, position)
+                                onMonthSelected(month, calendarFractionPosition)
                             }
                         }
                     )
@@ -215,8 +201,7 @@ fun MonthView(
                                 bottom = 0f
                             ) {
                                 onDrawBehindDay(
-                                    cellWidth,
-                                    cellHeightInPix,
+                                    Size(cellWidth, cellHeightInPix),
                                     month,
                                     dayOfMonth,
                                     if (dayOfMonth == lastSelectedDay) clickAnim.value else 1f
@@ -263,4 +248,12 @@ fun MonthView(
 
         }
     }
+}
+
+fun LocalDate.weekOfYear() = get(WeekFields.ISO.weekOfYear())
+
+fun overlappingWeeks(start: LocalDate, end: LocalDate): Int {
+    val firstWeek = start.get(WeekFields.ISO.weekOfYear())
+    val lastWeek = end.get(WeekFields.ISO.weekOfYear())
+    return (lastWeek - firstWeek) + 1
 }

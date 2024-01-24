@@ -11,6 +11,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -21,7 +22,7 @@ fun YearsCalendarView(
     calendarModifier: Modifier = Modifier,
     calendarData: Calendar,
     onMonthSelected: (MonthData, Offset) -> Unit,
-    onDrawBehindDay: DrawScope.(Float, Float, MonthData, DayNumber, Float) -> Unit = { _, _, _, _, _ -> },
+    onDrawBehindDay: DrawScope.(Size, MonthData, DayNumber, AnimationValue) -> Unit = { _, _, _, _, -> },
     onDaySelected: ((MonthData, DayNumber) -> Unit)? = null,
 ) {
     val monthsGroupedByYear by remember {
@@ -54,7 +55,6 @@ fun YearsCalendarView(
                         onMonthSelected = onMonthSelected,
                         onDrawBehindDay = onDrawBehindDay,
                         onDaySelected = onDaySelected,
-//                        selectedDays = setOf()
                     )
                 }
             }
