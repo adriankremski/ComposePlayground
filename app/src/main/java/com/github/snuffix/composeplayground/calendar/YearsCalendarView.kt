@@ -29,7 +29,6 @@ fun YearsCalendarView(
     calendarData: Calendar,
     onMonthSelected: (MonthData, Offset) -> Unit,
     onDrawBehindDay: DrawScope.(Size, MonthData, DayNumber, AnimationValue) -> Unit = { _, _, _, _ -> },
-    onDaySelected: ((MonthData, DayNumber) -> Unit)? = null,
 ) {
     val monthsGroupedByYear by remember {
         mutableStateOf(calendarData.months.groupBy { it.firstDayOfMonth.year })
@@ -65,7 +64,6 @@ fun YearsCalendarView(
                         monthNameFormatter = { "${it.month}" },
                         onMonthSelected = onMonthSelected,
                         onDrawBehindDay = onDrawBehindDay,
-                        onDaySelected = onDaySelected,
                     )
                 }
             }

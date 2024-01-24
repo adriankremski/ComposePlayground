@@ -1,6 +1,5 @@
 package com.github.snuffix.composeplayground.calendar
 
-import android.widget.Toast
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
@@ -8,8 +7,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.wrapContentWidth
-import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.Divider
 import androidx.compose.material3.MaterialTheme
@@ -30,7 +27,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -118,20 +114,33 @@ fun CalendarScreen() {
             }
 
             val selectedDays = remember { mutableStateMapOf<String, Set<Int>>() }
-            val onDaySelected: (MonthData, DayNumber) -> Unit = { month, day ->
-                selectedDays[month.key] = selectedDays[month.key]?.plus(day) ?: setOf(day)
+            var deselectedDay by remember { mutableStateOf<DayNumber?>(null) }
+            var deselectedMonth by remember { mutableStateOf<MonthData?>(null) }
+
+            val onDaySelected: (MonthData, DayNumber, Boolean) -> Unit = { month, day, isSelected ->
+                if (isSelected) {
+                    selectedDays[month.key] = selectedDays[month.key]?.plus(day) ?: setOf(day)
+                } else {
+                    deselectedDay = day
+                    deselectedMonth = month
+                    selectedDays[month.key] = selectedDays[month.key]?.minus(day) ?: setOf(day)
+                }
             }
 
             val monthOnDrawBehindDay = OnDrawBehindDay(
                 selectedDays = selectedDays,
                 padding = with(LocalDensity.current) { 4.dp.toPx() },
-                strokeWidth = with(LocalDensity.current) { 2.dp.toPx() }
+                strokeWidth = with(LocalDensity.current) { 2.dp.toPx() },
+                deselectedMonth = deselectedMonth,
+                deselectedDay = deselectedDay,
             )
 
             val yearOnDrawBehindDay = OnDrawBehindDay(
                 selectedDays = selectedDays,
                 padding = with(LocalDensity.current) { 1.dp.toPx() },
                 strokeWidth = with(LocalDensity.current) { 1.dp.toPx() },
+                deselectedDay = deselectedDay,
+                deselectedMonth = deselectedMonth
             )
 
             when (selectedTab) {
@@ -150,6 +159,10 @@ fun CalendarScreen() {
                         monthsListState = monthsListState,
                         isDaySelected = { month, day ->
                             selectedDays[month.key]?.contains(day) == true
+                        },
+                        onAnimationFinished = {
+                            deselectedMonth = null
+                            deselectedDay = null
                         }
                     )
                 }
@@ -176,6 +189,8 @@ class OnDrawBehindDay(
     private val selectedDays: Map<String, Set<Int>> = mapOf(),
     private val padding: Float,
     private val strokeWidth: Float,
+    private val deselectedMonth: MonthData?,
+    private val deselectedDay: DayNumber?,
 ) : (DrawScope, Size, MonthData, DayNumber, AnimationValue) -> Unit {
     override fun invoke(
         scope: DrawScope,
@@ -187,7 +202,7 @@ class OnDrawBehindDay(
         val width = size.width
         val height = size.height
 
-        if (selectedDays[month.key]?.contains(dayNumber) == true) {
+        if (selectedDays[month.key]?.contains(dayNumber) == true || (deselectedMonth == month && dayNumber == deselectedDay)) {
             val dashesCount = 30f
             val dashPortion = 0.75f
             val gapPortion = 0.25f

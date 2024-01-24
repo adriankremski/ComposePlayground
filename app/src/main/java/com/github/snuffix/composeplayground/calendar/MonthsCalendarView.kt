@@ -3,7 +3,6 @@ package com.github.snuffix.composeplayground.calendar
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -34,9 +33,10 @@ fun MonthsCalendarView(
     selectedMonthKey: String = "",
     calendar: Calendar,
     onDrawBehindDay: DrawScope.(Size, MonthData, DayNumber, AnimationValue) -> Unit = { _, _, _, _ -> },
-    onDaySelected: ((MonthData, DayNumber) -> Unit)? = null,
+    onDaySelected: ((MonthData, DayNumber, Boolean) -> Unit)? = null,
     isDaySelected: (MonthData, DayNumber) -> Boolean,
-    onCurrentMonthVisibilityChanged: (Boolean) -> Unit = {}
+    onCurrentMonthVisibilityChanged: (Boolean) -> Unit = {},
+    onAnimationFinished: () -> Unit,
 ) {
     val currentMonthIndex =
         remember { calendar.months.indexOfFirst { it.firstDayOfMonth.month == calendar.today.month } }
@@ -90,8 +90,9 @@ fun MonthsCalendarView(
                 month = calendar.months[it],
                 calendarModifier = calendarModifier,
                 onDrawBehindDay = onDrawBehindDay,
-                onDaySelected = onDaySelected,
-                isDaySelected = isDaySelected
+                onDaySelectionChanged = onDaySelected,
+                isDaySelected = isDaySelected,
+                onAnimationFinished = onAnimationFinished
             )
 
             Divider()

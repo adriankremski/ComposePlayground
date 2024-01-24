@@ -1,6 +1,7 @@
 package com.github.snuffix.composeplayground.calendar
 
 import android.graphics.RectF
+import android.util.Log
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
@@ -42,6 +43,7 @@ import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.time.LocalDate
 import java.time.temporal.WeekFields
@@ -64,9 +66,10 @@ fun MonthView(
     cellHeight: Dp = 60.dp,
     monthNameFormatter: (LocalDate) -> String = { "${it.month} ${it.year}" },
     onDrawBehindDay: DrawScope.(Size, MonthData, DayNumber, AnimationValue) -> Unit = { _, _, _, _ -> },
-    onDaySelected: ((MonthData, DayNumber) -> Unit)? = null,
+    onDaySelectionChanged: ((MonthData, DayNumber, Boolean) -> Unit)? = null,
     isDaySelected: (MonthData, DayNumber) -> Boolean = { _, _ -> false },
     onMonthSelected: ((MonthData, Offset) -> Unit)? = null,
+    onAnimationFinished: (() -> Unit)? = null,
 ) {
     var calendarFractionPosition by remember { mutableStateOf(Offset.Zero) } // (0,0) = topLeft, (1f,1f) = bottomRight
     var singleDigitDayLayoutRes by remember { mutableStateOf<TextLayoutResult?>(null) }
@@ -105,7 +108,11 @@ fun MonthView(
 
         var lastSelectedDay by remember { mutableIntStateOf(-1) }
 
-        val clickAnim = remember { Animatable(0f) }
+        val clickAnim = remember {
+            Animatable(
+                0f,
+            )
+        }
         val scope = rememberCoroutineScope()
 
         Canvas(
@@ -124,23 +131,41 @@ fun MonthView(
                 .pointerInput(month.key) {
                     detectTapGestures(
                         onTap = { tapOffset ->
-                            if (onDaySelected != null) {
+                            if (onDaySelectionChanged != null) {
                                 cellsData
                                     .firstOrNull {
                                         it.rect.contains(tapOffset.x, tapOffset.y)
                                     }
                                     ?.let {
-                                        val startAnimation = !isDaySelected(month, it.dayOfMonth)
-                                        onDaySelected(month, it.dayOfMonth)
-                                        lastSelectedDay = it.dayOfMonth
-
-                                        if (startAnimation) {
+                                        if (!isDaySelected(month, it.dayOfMonth)) {
+                                            onDaySelectionChanged(month, it.dayOfMonth, true)
+                                            lastSelectedDay = it.dayOfMonth
                                             scope.launch {
-                                                clickAnim.snapTo(0f)
+                                                clickAnim.snapTo(0.0f)
                                                 clickAnim.animateTo(
                                                     targetValue = 1f,
-                                                    animationSpec = tween(500)
-                                                )
+                                                    animationSpec = tween(250),
+                                                ) {
+                                                    if (!this.isRunning || this.value == 1f) {
+                                                        lastSelectedDay = -1
+                                                        onAnimationFinished?.invoke()
+                                                    }
+                                                }
+                                            }
+                                        } else {
+                                            onDaySelectionChanged(month, it.dayOfMonth, false)
+                                            lastSelectedDay = it.dayOfMonth
+                                            scope.launch {
+                                                clickAnim.snapTo(1f)
+                                                clickAnim.animateTo(
+                                                    targetValue = 0f,
+                                                    animationSpec = tween(250)
+                                                ) {
+                                                    if (!this.isRunning || this.value == 0f) {
+                                                        lastSelectedDay = -1
+                                                        onAnimationFinished?.invoke()
+                                                    }
+                                                }
                                             }
                                         }
                                     }
