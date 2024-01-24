@@ -147,7 +147,10 @@ fun CalendarScreen() {
                         onCurrentMonthVisibilityChanged = { visible ->
                             displayCurrentDayButton = !visible
                         },
-                        monthsListState = monthsListState
+                        monthsListState = monthsListState,
+                        isDaySelected = { month, day ->
+                            selectedDays[month.key]?.contains(day) == true
+                        }
                     )
                 }
 

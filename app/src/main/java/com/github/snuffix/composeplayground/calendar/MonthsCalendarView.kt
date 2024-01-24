@@ -35,6 +35,7 @@ fun MonthsCalendarView(
     calendar: Calendar,
     onDrawBehindDay: DrawScope.(Size, MonthData, DayNumber, AnimationValue) -> Unit = { _, _, _, _ -> },
     onDaySelected: ((MonthData, DayNumber) -> Unit)? = null,
+    isDaySelected: (MonthData, DayNumber) -> Boolean,
     onCurrentMonthVisibilityChanged: (Boolean) -> Unit = {}
 ) {
     val currentMonthIndex =
@@ -90,9 +91,8 @@ fun MonthsCalendarView(
                 calendarModifier = calendarModifier,
                 onDrawBehindDay = onDrawBehindDay,
                 onDaySelected = onDaySelected,
-                onMonthSelected = { _, _ ->
-
-                })
+                isDaySelected = isDaySelected
+            )
 
             Divider()
         }

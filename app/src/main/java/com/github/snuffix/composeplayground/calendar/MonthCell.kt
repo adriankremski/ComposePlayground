@@ -65,7 +65,8 @@ fun MonthView(
     monthNameFormatter: (LocalDate) -> String = { "${it.month} ${it.year}" },
     onDrawBehindDay: DrawScope.(Size, MonthData, DayNumber, AnimationValue) -> Unit = { _, _, _, _ -> },
     onDaySelected: ((MonthData, DayNumber) -> Unit)? = null,
-    onMonthSelected: (MonthData, Offset) -> Unit,
+    isDaySelected: (MonthData, DayNumber) -> Boolean = { _, _ -> false },
+    onMonthSelected: ((MonthData, Offset) -> Unit)? = null,
 ) {
     var calendarFractionPosition by remember { mutableStateOf(Offset.Zero) } // (0,0) = topLeft, (1f,1f) = bottomRight
     var singleDigitDayLayoutRes by remember { mutableStateOf<TextLayoutResult?>(null) }
@@ -129,19 +130,22 @@ fun MonthView(
                                         it.rect.contains(tapOffset.x, tapOffset.y)
                                     }
                                     ?.let {
+                                        val startAnimation = !isDaySelected(month, it.dayOfMonth)
                                         onDaySelected(month, it.dayOfMonth)
                                         lastSelectedDay = it.dayOfMonth
 
-                                        scope.launch {
-                                            clickAnim.snapTo(0f)
-                                            clickAnim.animateTo(
-                                                targetValue = 1f,
-                                                animationSpec = tween(500)
-                                            )
+                                        if (startAnimation) {
+                                            scope.launch {
+                                                clickAnim.snapTo(0f)
+                                                clickAnim.animateTo(
+                                                    targetValue = 1f,
+                                                    animationSpec = tween(500)
+                                                )
+                                            }
                                         }
                                     }
                             } else {
-                                onMonthSelected(month, calendarFractionPosition)
+                                onMonthSelected?.invoke(month, calendarFractionPosition)
                             }
                         }
                     )
