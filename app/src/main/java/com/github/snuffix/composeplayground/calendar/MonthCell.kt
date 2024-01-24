@@ -195,8 +195,8 @@ fun MonthView(
                                     textMeasurer = textMeasurer,
                                     style = TextStyle(
                                         fontSize = dayCellTextSize,
-                                        fontWeight = FontWeight.Bold,
-                                        fontFamily = FontFamily.Default,
+                                        fontWeight = FontWeight.Normal,
+                                        fontFamily = FontFamily.SansSerif,
                                     )
                                 )
                             }
@@ -223,8 +223,8 @@ fun dayCellText(text: String, textUnit: TextUnit): AnnotatedString = buildAnnota
     withStyle(
         style = SpanStyle(
             fontSize = textUnit,
-            fontWeight = FontWeight.Bold,
-            fontFamily = FontFamily.Default,
+            fontWeight = FontWeight.Normal,
+            fontFamily = FontFamily.SansSerif,
         ),
     ) {
         append(text)

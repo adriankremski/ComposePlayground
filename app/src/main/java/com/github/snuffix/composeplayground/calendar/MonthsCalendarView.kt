@@ -2,9 +2,12 @@ package com.github.snuffix.composeplayground.calendar
 
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.material3.Divider
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
@@ -18,6 +21,7 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
 
 @Composable
@@ -74,7 +78,8 @@ fun MonthsCalendarView(
             scaleX = monthScale
             scaleY = monthScale
             transformOrigin = TransformOrigin(pivotFractionX, pivotFractionY)
-        }
+        },
+        verticalArrangement = Arrangement.spacedBy(24.dp),
     ) {
         items(
             count = calendar.months.size,
@@ -88,6 +93,8 @@ fun MonthsCalendarView(
                 onMonthSelected = { _, _ ->
 
                 })
+
+            Divider()
         }
     }
 }

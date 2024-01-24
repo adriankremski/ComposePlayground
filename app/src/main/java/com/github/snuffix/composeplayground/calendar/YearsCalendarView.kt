@@ -1,9 +1,13 @@
 package com.github.snuffix.composeplayground.calendar
 
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.material3.Divider
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -13,6 +17,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.drawscope.DrawScope
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
@@ -22,7 +28,7 @@ fun YearsCalendarView(
     calendarModifier: Modifier = Modifier,
     calendarData: Calendar,
     onMonthSelected: (MonthData, Offset) -> Unit,
-    onDrawBehindDay: DrawScope.(Size, MonthData, DayNumber, AnimationValue) -> Unit = { _, _, _, _, -> },
+    onDrawBehindDay: DrawScope.(Size, MonthData, DayNumber, AnimationValue) -> Unit = { _, _, _, _ -> },
     onDaySelected: ((MonthData, DayNumber) -> Unit)? = null,
 ) {
     val monthsGroupedByYear by remember {
@@ -31,7 +37,10 @@ fun YearsCalendarView(
 
     LazyVerticalGrid(
         modifier = modifier,
-        columns = GridCells.Fixed(3)
+        columns = GridCells.Fixed(3),
+        contentPadding = PaddingValues(8.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp),
+        horizontalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         monthsGroupedByYear.forEach { (year, months) ->
             item(key = year.toString(), span = {
@@ -40,7 +49,9 @@ fun YearsCalendarView(
                 Text(
                     text = "$year",
                     fontSize = 20.sp,
-                    modifier = Modifier.padding(16.dp)
+                    fontWeight = FontWeight.Bold,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.padding(16.dp).fillMaxWidth()
                 )
             }
 
@@ -49,14 +60,20 @@ fun YearsCalendarView(
                     MonthView(
                         month = month,
                         calendarModifier = calendarModifier,
-                        dayCellTextSize = 10.sp,
-                        cellHeight = 20.dp,
+                        dayCellTextSize = 9.sp,
+                        cellHeight = 16.dp,
                         monthNameFormatter = { "${it.month}" },
                         onMonthSelected = onMonthSelected,
                         onDrawBehindDay = onDrawBehindDay,
                         onDaySelected = onDaySelected,
                     )
                 }
+            }
+
+            item(key = "Divider$year", span = {
+                GridItemSpan(this.maxLineSpan)
+            }) {
+                Divider()
             }
         }
     }
