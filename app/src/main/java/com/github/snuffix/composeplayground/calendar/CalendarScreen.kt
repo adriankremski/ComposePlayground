@@ -15,6 +15,7 @@ import androidx.compose.material3.Divider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
@@ -30,6 +31,7 @@ import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
@@ -119,65 +121,18 @@ fun CalendarScreen() {
             val onDaySelected: (MonthData, DayNumber) -> Unit = { month, day ->
                 selectedDays[month.key] = selectedDays[month.key]?.plus(day) ?: setOf(day)
             }
-            val onDrawBehindDay: DrawScope.(Size, MonthData, DayNumber, AnimationValue) -> Unit =
-                { size, month, dayNumber, animationValue ->
-                    val width = size.width
-                    val height = size.height
 
-                    if (selectedDays[month.key]?.contains(dayNumber) == true) {
-                        val dashesCount = 30f
-                        val dashPortion = 0.75f
-                        val gapPortion = 0.25f
-                        val circumference = 2f * Math.PI * width / 2f
-                        val dashPlusGapSize = (circumference / dashesCount).toFloat()
+            val monthOnDrawBehindDay = OnDrawBehindDay(
+                selectedDays = selectedDays,
+                padding = with(LocalDensity.current) { 4.dp.toPx() },
+                strokeWidth = with(LocalDensity.current) { 2.dp.toPx() }
+            )
 
-                        val padding = 4.dp.toPx()
-
-                        val selectionSize = Size(width - padding * 2, height - padding * 2)
-                        val topLeft = Offset(padding, padding)
-
-                        when (dayNumber) {
-                            in 0..10 -> {
-                                drawArc(
-                                    startAngle = 90f,
-                                    sweepAngle = (360f) * animationValue,
-                                    color = Color.Red,
-                                    useCenter = false,
-                                    topLeft = topLeft,
-                                    size = selectionSize,
-                                    style = Stroke(
-                                        width = 2.dp.toPx(),
-                                        cap = Stroke.DefaultCap,
-                                        pathEffect = PathEffect.dashPathEffect(
-                                            floatArrayOf(
-                                                dashPlusGapSize * dashPortion,
-                                                dashPlusGapSize * gapPortion
-                                            ), 0f
-                                        )
-                                    )
-                                )
-                            }
-
-                            else -> {
-                                drawCircle(
-                                    center = Offset(width / 2, height / 2),
-                                    color = Color.Red,
-                                    radius = selectionSize.width / 2f * animationValue,
-                                    style = Stroke(
-                                        width = 2.dp.toPx(),
-                                        cap = Stroke.DefaultCap,
-                                        pathEffect = PathEffect.dashPathEffect(
-                                            floatArrayOf(
-                                                dashPlusGapSize * dashPortion,
-                                                dashPlusGapSize * gapPortion
-                                            ), 0f
-                                        )
-                                    )
-                                )
-                            }
-                        }
-                    }
-                }
+            val yearOnDrawBehindDay = OnDrawBehindDay(
+                selectedDays = selectedDays,
+                padding = with(LocalDensity.current) { 1.dp.toPx() },
+                strokeWidth = with(LocalDensity.current) { 1.dp.toPx() },
+            )
 
             when (selectedTab) {
                 CalendarTab.Month -> {
@@ -188,7 +143,7 @@ fun CalendarScreen() {
                         pivotFractionY = selectedMonthOffsetFraction.y,
                         selectedMonthKey = selectedMonthKey,
                         onDaySelected = onDaySelected,
-                        onDrawBehindDay = onDrawBehindDay,
+                        onDrawBehindDay = monthOnDrawBehindDay,
                         onCurrentMonthVisibilityChanged = { visible ->
                             displayCurrentDayButton = !visible
                         },
@@ -205,7 +160,79 @@ fun CalendarScreen() {
                             selectedMonthOffsetFraction = offset
                             selectedTab = CalendarTab.Month
                         },
-                        onDrawBehindDay = onDrawBehindDay,
+                        onDrawBehindDay = yearOnDrawBehindDay,
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Immutable
+class OnDrawBehindDay(
+    private val selectedDays: Map<String, Set<Int>> = mapOf(),
+    private val padding: Float,
+    private val strokeWidth: Float,
+) : (DrawScope, Size, MonthData, DayNumber, AnimationValue) -> Unit {
+    override fun invoke(
+        scope: DrawScope,
+        size: Size,
+        month: MonthData,
+        dayNumber: DayNumber,
+        animationValue: AnimationValue
+    ) {
+        val width = size.width
+        val height = size.height
+
+        if (selectedDays[month.key]?.contains(dayNumber) == true) {
+            val dashesCount = 30f
+            val dashPortion = 0.75f
+            val gapPortion = 0.25f
+            val circumference = 2f * Math.PI * width / 2f
+            val dashPlusGapSize = (circumference / dashesCount).toFloat()
+
+            val selectionSize = with(minOf(width - padding * 2, height - padding * 2)) {
+                Size(this, this)
+            }
+            val topLeft = Offset(padding, padding)
+
+            when (dayNumber) {
+                in 0..10 -> {
+                    scope.drawArc(
+                        startAngle = 90f,
+                        sweepAngle = (360f) * animationValue,
+                        color = Color.Red,
+                        useCenter = false,
+                        topLeft = topLeft,
+                        size = selectionSize,
+                        style = Stroke(
+                            width = strokeWidth,
+                            cap = Stroke.DefaultCap,
+                            pathEffect = PathEffect.dashPathEffect(
+                                floatArrayOf(
+                                    dashPlusGapSize * dashPortion,
+                                    dashPlusGapSize * gapPortion
+                                ), 0f
+                            )
+                        )
+                    )
+                }
+
+                else -> {
+                    scope.drawCircle(
+                        center = Offset(width / 2, height / 2),
+                        color = Color.Red,
+                        radius = selectionSize.width / 2f * animationValue,
+                        style = Stroke(
+                            width = strokeWidth,
+                            cap = Stroke.DefaultCap,
+                            pathEffect = PathEffect.dashPathEffect(
+                                floatArrayOf(
+                                    dashPlusGapSize * dashPortion,
+                                    dashPlusGapSize * gapPortion
+                                ), 0f
+                            )
+                        )
                     )
                 }
             }
