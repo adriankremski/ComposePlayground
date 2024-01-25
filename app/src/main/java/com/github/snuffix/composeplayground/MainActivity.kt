@@ -22,6 +22,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.github.snuffix.composeplayground.calendar.CalendarScreen
+import com.github.snuffix.composeplayground.graphs.GradientLegend
+import com.github.snuffix.composeplayground.graphs.DonutChart
+import com.github.snuffix.composeplayground.graphs.SpiralGraph
+import com.github.snuffix.composeplayground.graphs.colorHigh
+import com.github.snuffix.composeplayground.graphs.colorLow
+import com.github.snuffix.composeplayground.graphs.colorMid1
+import com.github.snuffix.composeplayground.graphs.colorMid2
 import com.github.snuffix.composeplayground.ui.theme.ComposePlaygroundTheme
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
@@ -131,6 +138,20 @@ class MainActivity : ComponentActivity() {
                             CalendarScreen()
                         }
 
+                        Screen.SpiralGraph -> {
+                            SpiralGraph()
+                        }
+
+                        Screen.GradientLegend -> {
+                            GradientLegend()
+                        }
+
+                        Screen.PieChart -> {
+                            DonutChart(proportions = listOf(0.1f, 0.2f, 0.6f, 0.1f), colors = listOf(
+                                colorLow, colorMid1, colorMid2, colorHigh
+                            ))
+                        }
+
                         null -> {
                             Column(
                                 modifier = Modifier
@@ -164,7 +185,10 @@ enum class Screen {
     LazyListFooterHeader,
     Shader,
     StepsList,
-    Calendar
+    Calendar,
+    SpiralGraph,
+    GradientLegend,
+    PieChart
 }
 
 @Composable
