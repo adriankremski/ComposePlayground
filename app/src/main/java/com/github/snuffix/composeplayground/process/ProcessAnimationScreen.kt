@@ -1,18 +1,13 @@
 package com.github.snuffix.composeplayground.process
 
-import android.util.Log
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.AnimationVector1D
-import androidx.compose.animation.core.animateValue
 import androidx.compose.animation.core.tween
-import androidx.compose.animation.core.updateTransition
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.slideInVertically
-import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -25,7 +20,6 @@ import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Slider
-import androidx.compose.material3.SliderColors
 import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -147,31 +141,27 @@ fun ProcessAnimationScreen() {
         }
 
         if (display) {
-            ProcessAnimation(steps = steps)
+            ProcessWigdet(steps = steps)
         }
     }
 }
 
 @Composable
-fun ProcessAnimation(steps: List<Step>) {
+fun ProcessWigdet(steps: List<Step>) {
     Box(
         modifier = Modifier
             .background(backgroundColor)
             .fillMaxSize()
     ) {
         val iconAnimations = steps.map {
-            remember {
-                androidx.compose.animation.core.Animatable(0f)
-            }
+            remember { androidx.compose.animation.core.Animatable(0f) }
         }
         val pathAnimations = steps.map {
-            remember {
-                androidx.compose.animation.core.Animatable(0f)
-            }
+            remember { androidx.compose.animation.core.Animatable(0f) }
         }
-        val vectorIcons = steps.map {
-            it.icon?.let {
-                rememberVectorPainter(it)
+        val vectorIcons = steps.map { step ->
+            step.icon?.let { imageVector ->
+                rememberVectorPainter(imageVector)
             }
         }
 
@@ -190,6 +180,7 @@ fun ProcessAnimation(steps: List<Step>) {
             }
 
             titleVisibility = true
+
             launch {
                 delay(300)
                 subtitleVisibility = true
@@ -201,7 +192,6 @@ fun ProcessAnimation(steps: List<Step>) {
                     animation.animateTo(1f, animationSpec = tween(200))
                 }
             }
-
         }
 
         Box(
@@ -232,40 +222,34 @@ fun ProcessAnimation(steps: List<Step>) {
                         val sweepAngle = stepAngle - paddingAngle * 2
 
                         val strokeWidth = 8f
-                        if (step.state == StepState.FINISHED) {
-                            drawArc(
-                                startAngle = startAngle,
-                                sweepAngle = sweepAngle * pathAnimations[index].value,
-                                color = stepFinishedColor,
-                                useCenter = false,
-                                topLeft = topLeft,
-                                size = Size(radius * 2, radius * 2),
-                                style = Stroke(
-                                    width = strokeWidth,
-                                    cap = Stroke.DefaultCap,
-                                    join = StrokeJoin.Round
-                                )
+                        val (color, stroke) = if (step.state == StepState.FINISHED) {
+                            stepFinishedColor to Stroke(
+                                width = strokeWidth,
+                                cap = Stroke.DefaultCap,
+                                join = StrokeJoin.Round
                             )
                         } else {
-                            drawArc(
-                                startAngle = startAngle,
-                                sweepAngle = sweepAngle * pathAnimations[index].value,
-                                color = stepNotStartedColor,
-                                useCenter = false,
-                                topLeft = topLeft,
-                                size = Size(radius * 2, radius * 2),
-                                style = Stroke(
-                                    width = strokeWidth,
-                                    cap = Stroke.DefaultCap,
-                                    pathEffect = PathEffect.dashPathEffect(
-                                        floatArrayOf(
-                                            dashPlusGapSize * dashPortion,
-                                            dashPlusGapSize * gapPortion
-                                        ), 0f
-                                    )
+                            stepNotStartedColor to Stroke(
+                                width = strokeWidth,
+                                cap = Stroke.DefaultCap,
+                                pathEffect = PathEffect.dashPathEffect(
+                                    floatArrayOf(
+                                        dashPlusGapSize * dashPortion,
+                                        dashPlusGapSize * gapPortion
+                                    ), 0f
                                 )
                             )
                         }
+
+                        drawArc(
+                            startAngle = startAngle,
+                            sweepAngle = sweepAngle * pathAnimations[index].value,
+                            color = color,
+                            useCenter = false,
+                            topLeft = topLeft,
+                            size = Size(radius * 2, radius * 2),
+                            style = stroke
+                        )
 
 
                         val centerCircleX = topLeft.x + radius
@@ -323,7 +307,7 @@ fun ProcessAnimation(steps: List<Step>) {
                             },
                             visible = titleVisibility,
                             enter = fadeIn(
-                                animationSpec = androidx.compose.animation.core.tween(
+                                animationSpec = tween(
                                     durationMillis = 500
                                 )
                             )
@@ -346,11 +330,11 @@ fun ProcessAnimation(steps: List<Step>) {
                             },
                             visible = subtitleVisibility,
                             enter = fadeIn(
-                                animationSpec = androidx.compose.animation.core.tween(
+                                animationSpec = tween(
                                     durationMillis = 500
                                 )
                             ) + slideInVertically(
-                                animationSpec = androidx.compose.animation.core.tween(
+                                animationSpec = tween(
                                     durationMillis = 500
                                 )
                             )

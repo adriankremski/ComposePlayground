@@ -20,6 +20,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.github.snuffix.composeplayground.bottom_menu.PhotoPickerScreen
 import com.github.snuffix.composeplayground.calendar.CalendarScreen
 import com.github.snuffix.composeplayground.graphs.GradientLegend
 import com.github.snuffix.composeplayground.graphs.DonutChart
@@ -30,7 +31,6 @@ import com.github.snuffix.composeplayground.graphs.colorMid1
 import com.github.snuffix.composeplayground.graphs.colorMid2
 import com.github.snuffix.composeplayground.process.ProcessAnimationScreen
 import com.github.snuffix.composeplayground.ui.theme.ComposePlaygroundTheme
-
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -99,23 +99,24 @@ class MainActivity : ComponentActivity() {
                         }
 
                         null -> {
-                            Column(
-                                modifier = Modifier
-                                    .fillMaxSize()
-                                    .padding(8.dp),
-                                verticalArrangement = Arrangement.spacedBy(8.dp)
-                            ) {
-                                Screen.values().forEach { screen ->
-                                    Button(
-                                        onClick = {
-                                            selectedScreen.value = screen
-                                        },
-                                        modifier = Modifier.fillMaxWidth()
-                                    ) {
-                                        Text(screen.name)
-                                    }
-                                }
-                            }
+                            PhotoPickerScreen()
+//                            Column(
+//                                modifier = Modifier
+//                                    .fillMaxSize()
+//                                    .padding(8.dp),
+//                                verticalArrangement = Arrangement.spacedBy(8.dp)
+//                            ) {
+//                                Screen.values().forEach { screen ->
+//                                    Button(
+//                                        onClick = {
+//                                            selectedScreen.value = screen
+//                                        },
+//                                        modifier = Modifier.fillMaxWidth()
+//                                    ) {
+//                                        Text(screen.name)
+//                                    }
+//                                }
+//                            }
                         }
                     }
                 }

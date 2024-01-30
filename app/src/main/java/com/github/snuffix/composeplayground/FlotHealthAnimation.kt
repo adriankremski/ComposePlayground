@@ -65,6 +65,7 @@ fun FloHealthAnimation() {
     val offset by animateOffsetAsState(targetValue = daysPositions[selectedDay])
 
     var changeOffset by remember { mutableStateOf(Offset.Zero) }
+    runCatching {  }
 
     Column(
         modifier = Modifier

@@ -61,7 +61,7 @@ fun AndroidListAnimation() {
             when (item) {
                 is ListElement.Header -> HeaderItem(
                     modifier = Modifier.animateItemPlacement().clickable {
-                        spaceByValue = if (spaceByValue == 0.dp) 8.dp else 0.dp
+                        spaceByValue = if (spaceByValue == 0.dp) 100.dp else 0.dp
                     },
                     text = item,
                 )
