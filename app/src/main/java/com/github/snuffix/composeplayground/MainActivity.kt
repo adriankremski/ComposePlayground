@@ -98,25 +98,28 @@ class MainActivity : ComponentActivity() {
                             ProcessAnimationScreen()
                         }
 
-                        null -> {
+                        Screen.PhotoPickerScreen -> {
                             PhotoPickerScreen()
-//                            Column(
-//                                modifier = Modifier
-//                                    .fillMaxSize()
-//                                    .padding(8.dp),
-//                                verticalArrangement = Arrangement.spacedBy(8.dp)
-//                            ) {
-//                                Screen.values().forEach { screen ->
-//                                    Button(
-//                                        onClick = {
-//                                            selectedScreen.value = screen
-//                                        },
-//                                        modifier = Modifier.fillMaxWidth()
-//                                    ) {
-//                                        Text(screen.name)
-//                                    }
-//                                }
-//                            }
+                        }
+
+                        null -> {
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .padding(8.dp),
+                                verticalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                Screen.values().forEach { screen ->
+                                    Button(
+                                        onClick = {
+                                            selectedScreen.value = screen
+                                        },
+                                        modifier = Modifier.fillMaxWidth()
+                                    ) {
+                                        Text(screen.name)
+                                    }
+                                }
+                            }
                         }
                     }
                 }
@@ -136,7 +139,8 @@ enum class Screen {
     SpiralGraph,
     GradientLegend,
     PieChart,
-    ProcessAnimation
+    ProcessAnimation,
+    PhotoPickerScreen
 }
 
 @Composable
