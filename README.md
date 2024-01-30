@@ -1,17 +1,23 @@
 # JetPack compose examples
 
-## 1. List with header and footer positioned dynamically
+## 1. Process animation 
+[process_animation.webm](https://github.com/adriankremski/ComposePlayground/assets/281360/741007f8-ac08-4417-90ab-f5b98077633c)
+
+## 2. Calendar
+[calendar.webm](https://github.com/adriankremski/ComposePlayground/assets/281360/dff3c9cc-85bd-4430-908b-abcda58f089b)
+
+## 3. Pie Chart
+[pie_chart.webm](https://github.com/adriankremski/ComposePlayground/assets/281360/67bffa3c-cd7a-4ba2-ae48-9a870c46fbb4)
+
+## 4. Steps list
+[steps_list.webm](https://github.com/adriankremski/ComposePlayground/assets/281360/e7704b41-20cb-4628-bc80-d750b03cf7a8)
+
+## 5. List with header and footer positioned dynamically
 https://github.com/adriankremski/ComposePlayground/assets/281360/6674472a-58b7-4d84-9dec-bbbd0ed48026
 
-## 2. Vertical progress tracking selected step
-https://github.com/adriankremski/ComposePlayground/assets/281360/27e9aaf6-055a-4f74-bf56-d8103204977b
+## 6. List animations
+[list_animations.webm](https://github.com/adriankremski/ComposePlayground/assets/281360/a7b3500e-937b-44c7-a8f5-0ee47fc8f22a)
 
-## 3. Using graphic layer
-https://github.com/adriankremski/ComposePlayground/assets/281360/ebfa1605-0a38-405a-ac7b-96639ee037fb
-
-## 4. Animated graph 
+## 7. Animated graph
 https://github.com/adriankremski/ComposePlayground/assets/281360/6d916fb3-4e0b-4e84-89ab-44b897c8680c
-
-## 5. Chromatic aberration with RuntimeShader
-https://github.com/adriankremski/ComposePlayground/assets/281360/b3ed5d05-db59-433f-a7b1-cf8f07561583
 
