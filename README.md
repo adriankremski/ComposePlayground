@@ -1,4 +1,5 @@
 # JetPack compose examples
+Certain recordings featured here may experience lags due to recording quality and the absence of R8 in the debug build.
 
 ## 1. Process animation 
 [process_animation.webm](https://github.com/adriankremski/ComposePlayground/assets/281360/741007f8-ac08-4417-90ab-f5b98077633c)
