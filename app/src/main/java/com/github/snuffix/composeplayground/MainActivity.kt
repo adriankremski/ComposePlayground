@@ -2,7 +2,6 @@ package com.github.snuffix.composeplayground
 
 import android.graphics.BitmapFactory
 import android.os.Bundle
-import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
@@ -29,67 +28,9 @@ import com.github.snuffix.composeplayground.graphs.colorHigh
 import com.github.snuffix.composeplayground.graphs.colorLow
 import com.github.snuffix.composeplayground.graphs.colorMid1
 import com.github.snuffix.composeplayground.graphs.colorMid2
+import com.github.snuffix.composeplayground.process.ProcessAnimationScreen
 import com.github.snuffix.composeplayground.ui.theme.ComposePlaygroundTheme
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.GlobalScope
-import kotlinx.coroutines.async
-import kotlinx.coroutines.coroutineScope
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 
-
-//val threadDispatcher = Executors.newSingleThreadExecutor().asCoroutineDispatcher()
-//val threadDispatcher2 = Executors.newSingleThreadExecutor().asCoroutineDispatcher()
-val threadDispatcher = Dispatchers.IO
-val threadDispatcher2 = threadDispatcher
-fun test() {
-    GlobalScope.launch(threadDispatcher) {
-        launch {
-            repeat(10) {
-                emptySuspend(1, it)
-            }
-        }
-        launch {
-            repeat(10) {
-                emptySuspend(2, it)
-            }
-        }
-    }
-}
-
-suspend fun emptySuspend(num: Int, num2: Int) = coroutineScope {
-    Log.i("AdrianTest", "$num. Hello $num2")
-    val result = async {
-        withContext(threadDispatcher2) {
-            calculateSomething(100000)
-        }
-    }
-
-    result.await()
-}
-
-
-suspend fun calculateSomething(num: Int) {
-    (0..num)
-        .toList()
-        .onEach {
-            point()
-        }
-        .sortedDescending()
-        .onEach {
-            point()
-        }
-        .sorted()
-        .onEach {
-            point()
-        }
-        .sortedDescending()
-        .onEach {
-            point()
-        }
-}
-
-suspend fun point() {}
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -147,9 +88,14 @@ class MainActivity : ComponentActivity() {
                         }
 
                         Screen.PieChart -> {
-                            DonutChart(proportions = listOf(0.1f, 0.2f, 0.6f, 0.1f), colors = listOf(
-                                colorLow, colorMid1, colorMid2, colorHigh
-                            ))
+                            DonutChart(
+                                proportions = listOf(0.1f, 0.2f, 0.6f, 0.1f), colors = listOf(
+                                    colorLow, colorMid1, colorMid2, colorHigh
+                                )
+                            )
+                        }
+                        Screen.ProcessAnimation -> {
+                            ProcessAnimationScreen()
                         }
 
                         null -> {
@@ -188,7 +134,8 @@ enum class Screen {
     Calendar,
     SpiralGraph,
     GradientLegend,
-    PieChart
+    PieChart,
+    ProcessAnimation
 }
 
 @Composable
