@@ -19,6 +19,7 @@ import androidx.compose.material.icons.filled.Done
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Icon
 import androidx.compose.material3.Slider
 import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Text
@@ -161,6 +162,7 @@ fun ProcessWigdet(steps: List<Step>) {
         }
         val vectorIcons = steps.map { step ->
             step.icon?.let { imageVector ->
+                Icon(imageVector, "")
                 rememberVectorPainter(imageVector)
             }
         }

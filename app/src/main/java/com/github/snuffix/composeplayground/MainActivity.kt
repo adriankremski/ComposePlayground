@@ -29,6 +29,8 @@ import com.github.snuffix.composeplayground.graphs.colorHigh
 import com.github.snuffix.composeplayground.graphs.colorLow
 import com.github.snuffix.composeplayground.graphs.colorMid1
 import com.github.snuffix.composeplayground.graphs.colorMid2
+import com.github.snuffix.composeplayground.notebook.NotebookScreen
+import com.github.snuffix.composeplayground.notebook.NotebookScreen2
 import com.github.snuffix.composeplayground.process.ProcessAnimationScreen
 import com.github.snuffix.composeplayground.ui.theme.ComposePlaygroundTheme
 
@@ -103,6 +105,8 @@ class MainActivity : ComponentActivity() {
                         }
 
                         null -> {
+//                            NotebookScreen2()
+                            return@Surface
                             Column(
                                 modifier = Modifier
                                     .fillMaxSize()

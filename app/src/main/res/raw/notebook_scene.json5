@@ -1,0 +1,116 @@
+{
+  ConstraintSets: {
+    start: {
+      weight_background: {
+        start: ['parent', 'start', 50],
+        top: ['parent', 'top', 250],
+      },
+      horizontal_guideline: {
+        start: ['weight_background', 'start', 0],
+        end: ['weight_background', 'end', 0],
+      },
+      vertical_guideline: {
+        top: ['weight_background', 'top', 0],
+        bottom: ['weight_background', 'bottom', 0],
+      },
+      weight_scroll: {
+        bottom: ['vertical_guideline', 'bottom', 0],
+      },
+      selected_weight: {
+        bottom: ['vertical_guideline', 'bottom', 0],
+      },
+      lbs_value: {
+        start: ['weight_background', 'start', 0],
+        end: ['weight_background', 'end', 0],
+        top: ['weight_background', 'top', 0],
+        bottom: ['weight_background', 'bottom', 0],
+      },
+      lbs_label: {
+          start: ['weight_background', 'start', 0],
+          end: ['weight_background', 'end', 0],
+          top: ['lbs_value', 'bottom', 0],
+          bottom: ['weight_background', 'bottom', 0],
+      },
+      lbs_hint: {
+        alpha: 0.0,
+        start: ['weight_background', 'start', 0],
+        end: ['weight_background', 'end', 0],
+        top: ['lbs_value', 'bottom', 0],
+      },
+
+      submitButton: {
+        alpha: 0.0,
+        start: ['weight_background', 'start', 0],
+        end: ['weight_background', 'end', 0],
+        top: ['lbs_hint', 'bottom', 0],
+      }
+    },
+    end: {
+      weight_background: {
+        start: ['parent', 'start', 0],
+        end: ['parent', 'end', 0],
+        top: ['parent', 'top', 0],
+        bottom: ['parent', 'bottom', 0],
+        scaleX: 5.0,
+        scaleY: 5.0,
+      },
+      horizontal_guideline: {
+        start: ['parent', 'start', 0],
+        end: ['parent', 'end', 0],
+      },
+      vertical_guideline: {
+        top: ['parent', 'top', 0],
+        bottom: ['parent', 'bottom', 0],
+      },
+      weight_scroll: {
+        bottom: ['vertical_guideline', 'bottom', 0],
+      },
+      selected_weight: {
+        top: ['vertical_guideline', 'top', 0],
+        bottom: ['vertical_guideline', 'bottom', 0],
+        start: ['weight_scroll', 'start', 0],
+        end: ['weight_scroll', 'end', 0],
+      },
+        lbs_value: {
+            end: ['horizontal_guideline', 'start', 10],
+            top: ['vertical_guideline', 'top', 50],
+            scaleX: 2.0,
+            scaleY: 2.0,
+        },
+        lbs_label: {
+            start: ['horizontal_guideline', 'end', 20],
+            bottom: ['lbs_value', 'bottom', 0],
+          scaleX: 2.0,
+          scaleY: 2.0,
+        },
+        lbs_hint: {
+          alpha: 1.0,
+          start: ['weight_background', 'start', 20],
+          end: ['weight_background', 'end', 0],
+          top: ['lbs_value', 'bottom', 10],
+        },
+        submitButton: {
+          alpha: 1.0,
+          start: ['weight_background', 'start', 0],
+          end: ['weight_background', 'end', 0],
+          top: ['lbs_hint', 'bottom', 20],
+        }
+    }
+  },
+  Transitions: {
+    default: {
+      from: 'start',
+      to: 'end',
+      pathMotionArc: 'startHorizontal',
+      KeyFrames: {
+        KeyAttributes: [
+          {
+            target: ['my_image'],
+            frames: [0, 50, 100],
+            translationY: [0, -200, 0]
+          }
+        ]
+      }
+    }
+  }
+}

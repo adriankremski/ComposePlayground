@@ -34,7 +34,7 @@ fun DonutChart(
         MutableTransitionState(AnimatedCircleProgress.START)
             .apply { targetState = AnimatedCircleProgress.END }
     }
-    val stroke = with(LocalDensity.current) { Stroke(10.dp.toPx()) }
+    val stroke = with(LocalDensity.current) { Stroke(20.dp.toPx()) }
     val transition = updateTransition(currentState, label = "transition")
     val angleOffset by transition.animateFloat(
         transitionSpec = {
