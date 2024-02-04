@@ -1,6 +1,7 @@
 package com.github.snuffix.composeplayground.graphs
 
 import android.util.Log
+import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.CubicBezierEasing
 import androidx.compose.animation.core.LinearOutSlowInEasing
 import androidx.compose.animation.core.MutableTransitionState
@@ -99,9 +100,12 @@ fun DonutChart(
     }
 
     var selectedArc by remember { mutableIntStateOf(0) }
+    val textColor = animateColorAsState(targetValue = colors[selectedArc])
 
     Box(
-        modifier = Modifier.fillMaxWidth().height(400.dp)
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(400.dp)
     ) {
         Canvas(modifier
             .fillMaxSize()
@@ -169,7 +173,7 @@ fun DonutChart(
         Text(
             modifier = Modifier.align(Alignment.Center),
             text = "Selected Arc: $selectedArc",
-            color = colors[selectedArc],
+            color = textColor.value,
             fontWeight = FontWeight.Bold,
             fontSize = 40.sp
         )
