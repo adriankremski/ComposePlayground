@@ -38,6 +38,7 @@ import com.github.snuffix.composeplayground.notebook.NotebookScreen
 import com.github.snuffix.composeplayground.notebook.NotebookScreen2
 import com.github.snuffix.composeplayground.process.ProcessAnimationScreen
 import com.github.snuffix.composeplayground.ui.theme.ComposePlaygroundTheme
+import com.github.snuffix.composeplayground.weather.WeatherScreen
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -110,26 +111,29 @@ class MainActivity : ComponentActivity() {
                             PhotoPickerScreen()
                         }
 
+                        Screen.WeatherScreen -> {
+                            WeatherScreen()
+                        }
+
                         null -> {
-//                            NotebookScreen2()
-//                            return@Surface
-                            Column(
-                                modifier = Modifier
-                                    .fillMaxSize()
-                                    .padding(8.dp),
-                                verticalArrangement = Arrangement.spacedBy(8.dp)
-                            ) {
-                                Screen.values().forEach { screen ->
-                                    Button(
-                                        onClick = {
-                                            selectedScreen.value = screen
-                                        },
-                                        modifier = Modifier.fillMaxWidth()
-                                    ) {
-                                        Text(screen.name)
-                                    }
-                                }
-                            }
+                            WeatherScreen()
+//                            Column(
+//                                modifier = Modifier
+//                                    .fillMaxSize()
+//                                    .padding(8.dp),
+//                                verticalArrangement = Arrangement.spacedBy(8.dp)
+//                            ) {
+//                                Screen.values().forEach { screen ->
+//                                    Button(
+//                                        onClick = {
+//                                            selectedScreen.value = screen
+//                                        },
+//                                        modifier = Modifier.fillMaxWidth()
+//                                    ) {
+//                                        Text(screen.name)
+//                                    }
+//                                }
+//                            }
                         }
                     }
                 }
@@ -150,7 +154,8 @@ enum class Screen {
     GradientLegend,
     PieChart,
     ProcessAnimation,
-    PhotoPickerScreen
+    PhotoPickerScreen,
+    WeatherScreen
 }
 
 @Composable
