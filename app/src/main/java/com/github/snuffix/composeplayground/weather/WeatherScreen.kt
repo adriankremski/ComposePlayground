@@ -1,14 +1,18 @@
 package com.github.snuffix.composeplayground.weather
 
-import android.util.Log
+import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.spring
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -73,12 +77,12 @@ fun WeatherForecastView(
     selectedTimeOfDay: TimeOfDay,
     onSelected: (TimeOfDay) -> Unit
 ) {
-    val viewHeaderHeight = 150.dp
+    val viewHeaderHeight = 100.dp
 
     val viewMaxHeight = if (index == 0) {
         screenHeight
     } else {
-        screenHeight - index * 100.dp
+        screenHeight - index * viewHeaderHeight
     }
 
     val viewMinHeight = if (index == 0) {
@@ -87,27 +91,40 @@ fun WeatherForecastView(
         (TimeOfDay.entries.size - index) * viewHeaderHeight
     }
 
-    var viewHeight by remember {
-        mutableStateOf(viewMinHeight)
-    }
+    val viewHeight = animateDpAsState(
+        targetValue = if (selectedTimeOfDay.ordinal >= timeOfDay.ordinal) viewMaxHeight else viewMinHeight,
+        animationSpec = spring(
+            dampingRatio = Spring.DampingRatioLowBouncy,
+            stiffness = Spring.StiffnessLow
+        )
+    )
 
     Box(
         modifier = modifier
             .fillMaxWidth()
-            .height(viewHeight)
+            .height(viewHeight.value)
             .background(timeOfDay.bgColor)
-            .pointerInput(timeOfDay) {
-                detectVerticalDragGestures { change, dragAmount ->
-                    change.consume()
-                    viewHeight = (viewHeight.value + dragAmount)
-
-                    Log.i("AdrianTest", "${dragAmount}")
-                }
-            }
             .clickable {
-//                onSelected(timeOfDay)
+                onSelected(timeOfDay)
             }
     ) {
+        Row {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(0.6f)
+            )
+            Column(
+                modifier = Modifier
+                    .height(viewHeaderHeight)
+                    .fillMaxWidth()
+                    .weight(0.4f)
+                    .background(Color.Red)
+            ) {
+                Text(text = timeOfDay.name)
+
+            }
+        }
     }
 }
 
