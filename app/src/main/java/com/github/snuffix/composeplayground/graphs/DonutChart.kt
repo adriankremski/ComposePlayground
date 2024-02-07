@@ -1,5 +1,6 @@
 package com.github.snuffix.composeplayground.graphs
 
+import android.util.Log
 import androidx.compose.animation.core.Animatable
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.animation.core.CubicBezierEasing
@@ -9,10 +10,12 @@ import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.core.updateTransition
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.absoluteOffset
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
@@ -21,6 +24,8 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.AccountCircle
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -42,13 +47,17 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.geometry.lerp
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.vector.rememberVectorPainter
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.onPlaced
 import androidx.compose.ui.layout.positionInParent
 import androidx.compose.ui.layout.positionInRoot
+import androidx.compose.ui.layout.positionInWindow
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
@@ -427,53 +436,80 @@ fun ChartView(
         }
 
         val brushes = remember { values.map { it.donutGraphBrush } }
-        brushes.forEachIndexed { index, color ->
-            val arcTransitionProgress = donutArcTransitionAnimatable[index].value
 
-            Column(
-                modifier = Modifier
-                    .align(Alignment.TopStart)
-                    .padding(start = 100.dp, top = (index + 1) * 60.dp, end = 16.dp)
-                    .onPlaced {
-                        circleFinalPositions[index] = IntOffset(
-                            it.positionInParent().x.toInt(),
-                            it.positionInParent().y.toInt()
-                        )
-                    },
-            ) {
-                LinearProgressIndicator(
-                    modifier = Modifier
-                        .height(collapsedCircleEndRadiusInDp)
-                        .graphicsLayer {
-                            alpha = if (arcTransitionProgress == 1f) {
-                                1f
-                            } else {
-                                0f
-                            }
-                        },
-                    progress = linearProgressAnimation[index].value,
-                    strokeCap = ProgressIndicatorDefaults.CircularDeterminateStrokeCap,
-                    color = values[index].progressColor,
-                    trackColor = screenBackgroundColor,
-                )
+        Column(
+            modifier = Modifier
+                .align(Alignment.TopStart)
+        ) {
+            brushes.forEachIndexed { index, color ->
+                val arcTransitionProgress = donutArcTransitionAnimatable[index].value
 
-                Text(
+                var outerColumnPosition by remember { mutableStateOf(Offset.Zero) }
+
+                val imageWidthWithPadding = with(LocalDensity.current) { 80.dp.toPx() }
+                val progressTopPadding = with(LocalDensity.current) { 20.dp.toPx() }
+
+                Column(
                     modifier = Modifier
-                        .graphicsLayer {
-                            alpha = if (arcTransitionProgress == 1f) {
-                                1f
-                            } else {
-                                0f
-                            }
-                        },
-                    text = "$ ${
-                        String.format(
-                            "%.2f",
-                            linearProgressAnimation[index].value * 9999f
+                        .padding(top = 16.dp, end = 16.dp)
+                        .onPlaced {
+                            circleFinalPositions[index] = IntOffset(
+                                (it.positionInParent().x + imageWidthWithPadding).toInt(),
+                                (it.positionInParent().y + progressTopPadding).toInt()
+                            )
+                        }
+                ) {
+                    Row {
+                        Image(
+                            modifier = Modifier
+                                .padding(horizontal = 16.dp)
+                                .size(48.dp)
+                                .align(Alignment.CenterVertically)
+                                .graphicsLayer {
+                                    alpha = circleTransitionAnimatable[index].value
+                                },
+                            painter = rememberVectorPainter(image = Icons.Rounded.AccountCircle),
+                            contentDescription = "",
+                            colorFilter = ColorFilter.tint(values[index].progressColor),
                         )
-                    }",
-                    color = Color(0xFF848dad)
-                )
+
+                        Column(
+                            modifier = Modifier
+                                .onPlaced {
+                                    outerColumnPosition += it.positionInParent()
+                                }
+                                .align(Alignment.CenterVertically)
+                        ) {
+                            LinearProgressIndicator(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(top = 20.dp, end = 16.dp)
+                                    .height(collapsedCircleEndRadiusInDp)
+                                    .graphicsLayer {
+                                        alpha = circleTransitionAnimatable[index].value
+                                    },
+                                progress = linearProgressAnimation[index].value,
+                                strokeCap = ProgressIndicatorDefaults.CircularDeterminateStrokeCap,
+                                color = values[index].progressColor,
+                                trackColor = screenBackgroundColor,
+                            )
+
+                            Text(
+                                modifier = Modifier
+                                    .graphicsLayer {
+                                        alpha = circleTransitionAnimatable[index].value
+                                    },
+                                text = "$ ${
+                                    String.format(
+                                        "%.2f",
+                                        linearProgressAnimation[index].value * 9999f
+                                    )
+                                }",
+                                color = Color(0xFF848dad)
+                            )
+                        }
+                    }
+                }
             }
         }
 
