@@ -1,7 +1,7 @@
 package com.github.snuffix.composeplayground.graphs
 
-import android.util.Log
-import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.Animatable
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.animation.core.CubicBezierEasing
 import androidx.compose.animation.core.LinearOutSlowInEasing
 import androidx.compose.animation.core.MutableTransitionState
@@ -9,13 +9,25 @@ import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.core.updateTransition
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.absoluteOffset
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Button
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.ProgressIndicatorDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
@@ -24,39 +36,152 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.geometry.lerp
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.drawscope.DrawScope
+import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onPlaced
+import androidx.compose.ui.layout.positionInParent
+import androidx.compose.ui.layout.positionInRoot
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.lerp
 import androidx.compose.ui.unit.sp
-import kotlin.math.atan2
+import androidx.compose.ui.unit.times
+import com.github.snuffix.composeplayground.calculatePointAngleOnCircle
+import com.github.snuffix.composeplayground.isPointOnArc
+import kotlinx.coroutines.launch
+import kotlin.math.abs
+import kotlin.math.cos
+import kotlin.math.min
 import kotlin.math.pow
+import kotlin.math.sin
 import kotlin.math.sqrt
 
+
 // Spacing between each slice of the pie chart.
-private const val DividerLengthInDegrees = 1.8f
+private const val DividerLengthInDegrees = 0f
 
 /**
  * A donut chart that animates when loaded.
  */
+data class ValueData(
+    val proportion: Float,
+    val progressColor: Color,
+    val donutGraphBrush: Brush
+)
+
+val screenBackgroundColor = Color(0xFF142057)
+
 @Composable
-fun DonutChart(
-    proportions: List<Float>,
-    colors: List<Color>,
-    modifier: Modifier = Modifier
+fun DonutChartScreen() {
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(screenBackgroundColor)
+    ) {
+        var startTransitionAnimation by remember {
+            mutableStateOf<Boolean?>(null)
+        }
+
+        Box(
+            modifier = Modifier
+                .padding(16.dp)
+                .background(
+                    brush = Brush.verticalGradient(
+                        colors = listOf(
+                            Color(0xFF26387f),
+                            Color(0xFF1d2f63)
+                        )
+                    ),
+                    shape = RoundedCornerShape(20.dp),
+                )
+                .graphicsLayer {
+                }
+        ) {
+            ChartView(
+                values = listOf(
+                    ValueData(
+                        0.1f,
+                        progressColor = Color(0xFF3F4DB1),
+                        donutGraphBrush = donutChartGradient(
+                            0.3f to Color(0xFF3F4DB1).copy(alpha = 0.85f),
+                            0.8f to Color(0xFF353D94)
+                        ),
+                    ),
+                    ValueData(
+                        0.2f,
+                        progressColor = Color(0xFFed9b8c),
+                        donutChartGradient(
+                            0.3f to Color(0xFFed9b8c),
+                            0.8f to Color(0xFFb55850)
+                        ),
+                    ),
+                    ValueData(
+                        0.6f,
+                        progressColor = Color(0xFF9AF2D8),
+                        donutChartGradient(
+                            0.3f to Color(0xFF9AF2D8),
+                            0.8f to Color(0xFF5990AA)
+                        ),
+                    ),
+                    ValueData(
+                        0.1f,
+                        progressColor = Color(0xFFC05977),
+                        donutChartGradient(
+                            0.3f to Color(0xFFC05977),
+                            0.8f to Color(0xFFA54270)
+                        ),
+                    ),
+                ),
+                startTransitionAnimation = startTransitionAnimation
+            )
+        }
+
+        Button(
+            onClick = {
+                startTransitionAnimation = startTransitionAnimation?.let { !it } ?: true
+            },
+            modifier = Modifier.align(Alignment.BottomCenter)
+        ) {
+            Text(
+                text = "Animate",
+                fontSize = 20.sp,
+                fontWeight = FontWeight.Bold,
+                color = Color.White,
+            )
+        }
+    }
+}
+
+fun donutChartGradient(
+    vararg colorStops: Pair<Float, Color>,
+) = Brush.linearGradient(colorStops = colorStops)
+
+@Composable
+fun ChartView(
+    values: List<ValueData>,
+    modifier: Modifier = Modifier,
+    startTransitionAnimation: Boolean?
 ) {
+    val screenWidth = with(LocalDensity.current) {
+        with(LocalConfiguration.current) { screenWidthDp.dp.toPx() }
+    }
+
     val currentState = remember {
         MutableTransitionState(AnimatedCircleProgress.START)
             .apply { targetState = AnimatedCircleProgress.END }
     }
-    val stroke = with(LocalDensity.current) { Stroke(30.dp.toPx()) }
-    val selectedArcStroke = with(LocalDensity.current) { Stroke(40.dp.toPx()) }
     val transition = updateTransition(currentState, label = "transition")
     val angleOffset by transition.animateFloat(
         transitionSpec = {
@@ -86,39 +211,135 @@ fun DonutChart(
         if (progress == AnimatedCircleProgress.START) {
             0f
         } else {
-            proportions.first() * 360f
+            values.first().proportion * 360f
         }
     }
 
-    val canvasSize = remember {
-        mutableStateOf(Size.Zero)
-    }
-
-    val angles = remember { mutableStateOf(Array(proportions.size) { 0f to 0f }) }
     var innerRadius by remember {
         mutableFloatStateOf(0f)
     }
 
     var selectedArc by remember { mutableIntStateOf(0) }
-    val textColor = animateColorAsState(targetValue = colors[selectedArc])
+
+    val circleFinalPositions = remember {
+        Array(values.size) { IntOffset.Zero }
+    }
+    val donutArcTransitionAnimatable = remember {
+        Array(values.size) { Animatable(0f) }
+    }
+    val circleTransitionAnimatable = remember {
+        Array(values.size) { Animatable(0f) }
+    }
+    val linearProgressAnimation = remember {
+        Array(values.size) { Animatable(0f) }
+    }
+
+    startTransitionAnimation?.let {
+        LaunchedEffect(startTransitionAnimation) {
+            if (startTransitionAnimation) {
+                donutArcTransitionAnimatable.forEachIndexed { index, animatable ->
+                    launch {
+                        animatable.animateTo(
+                            targetValue = 1f,
+                            animationSpec = tween(
+                                durationMillis = 500,
+                                delayMillis = index * 300,
+                                easing = LinearOutSlowInEasing
+                            )
+                        )
+
+                        circleTransitionAnimatable[index].animateTo(
+                            targetValue = 1f,
+                            animationSpec = tween(
+                                durationMillis = 1000,
+                                easing = LinearOutSlowInEasing,
+                            ),
+                        )
+
+                        linearProgressAnimation[index].animateTo(
+                            targetValue = values[index].proportion,
+                            animationSpec = tween(
+                                durationMillis = 500,
+                                easing = LinearOutSlowInEasing,
+                            ),
+                        )
+                    }
+                }
+            } else {
+                donutArcTransitionAnimatable.forEachIndexed { index, animatable ->
+                    launch {
+                        linearProgressAnimation[index].animateTo(
+                            targetValue = 0f,
+                            animationSpec = tween(
+                                durationMillis = 500,
+                                delayMillis = index * 300,
+                                easing = LinearOutSlowInEasing,
+                            ),
+                        )
+
+                        circleTransitionAnimatable[index].animateTo(
+                            targetValue = 0f,
+                            animationSpec = tween(
+                                durationMillis = 1000,
+                                easing = LinearOutSlowInEasing,
+                            ),
+                        )
+
+                        animatable.animateTo(
+                            targetValue = 0f,
+                            animationSpec = tween(
+                                durationMillis = 1000,
+                                easing = LinearOutSlowInEasing
+                            )
+                        )
+                    }
+                }
+            }
+        }
+    }
+
+
+    val collapsedCircleStartRadiusInPx = 60f
+    val collapsedCircleStartRadius =
+        with(LocalDensity.current) { collapsedCircleStartRadiusInPx.toDp() }
+    val collapsedCircleEndRadiusInPx = 20f
+    val collapsedCircleEndRadiusInDp =
+        with(LocalDensity.current) { collapsedCircleEndRadiusInPx.toDp() }
+    val containerHeight = 400.dp
+    val donutChartHeight = 300.dp
+
+    // The boundaries of each value in the donut chart (start and sweep angles)
+    val valueAngleBoundaries = remember { mutableStateOf(Array(values.size) { 0f to 0f }) }
+    val canvasSize = remember {
+        mutableStateOf(Size.Zero)
+    }
+    val canvasCenter = remember {
+        mutableStateOf(Offset.Zero)
+    }
+
+    val stroke = with(LocalDensity.current) { Stroke(100.dp.toPx()) }
+    val selectedArcStroke = with(LocalDensity.current) { Stroke(120.dp.toPx()) }
 
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .height(400.dp)
+            .height(containerHeight)
     ) {
-        Canvas(modifier
-            .fillMaxSize()
-            .pointerInput(proportions) {
-                detectTapGestures(
-                    onTap = { tapOffset ->
-                        angles.value.forEachIndexed { index, it ->
+        Canvas(
+            modifier
+                .align(Alignment.Center)
+                .fillMaxWidth()
+                .height(donutChartHeight)
+                .pointerInput(values) {
+                    detectTapGestures { tapOffset ->
+                        valueAngleBoundaries.value.forEachIndexed { index, it ->
                             val (start, sweep) = it
                             val isOnArc = isPointOnArc(
-                                x = tapOffset.x,
-                                y = tapOffset.y,
-                                cx = canvasSize.value.width / 2,
-                                cy = canvasSize.value.height / 2,
+                                point = tapOffset,
+                                arcCenter = Offset(
+                                    canvasSize.value.width / 2,
+                                    canvasSize.value.height / 2
+                                ),
                                 radius = innerRadius,
                                 startAngle = start,
                                 sweepAngle = sweep,
@@ -130,91 +351,256 @@ fun DonutChart(
                             }
                         }
                     }
-                )
-            }
-            .onPlaced {
-                canvasSize.value = Size(it.size.width.toFloat(), it.size.height.toFloat())
-            }
+                }
+                .onPlaced {
+                    canvasSize.value = Size(it.size.width.toFloat(), it.size.height.toFloat())
+                    canvasCenter.value = it.positionInParent()
+                }
         ) {
-            innerRadius = (size.minDimension - stroke.width) / 2 // padding
+            innerRadius = (size.minDimension - stroke.width) / 2f // padding
             val halfSize = size / 2.0f
             val topLeft = Offset(
                 halfSize.width - innerRadius,
                 halfSize.height - innerRadius
             )
             val size = Size(innerRadius * 2, innerRadius * 2)
+            val strokeDiff = selectedArcStroke.width - stroke.width
+
+            val selectedArcSize = Size(innerRadius * 2 + strokeDiff, innerRadius * 2 + strokeDiff)
+            val selectedArcTopLeft = Offset(
+                halfSize.width - innerRadius - strokeDiff / 2,
+                halfSize.height - innerRadius - strokeDiff / 2
+            )
 
             // Start angle of first value in the graph. By the end of the animation, first value should
             // start from top center
-            val startAngle = shift - 90f - proportions.first() * 360f // start from top center
+            val startAngle = shift - 90f - values.first().proportion * 360f // start from top center
 
-            proportions.foldIndexed(startAngle) { index, currentValueStartAngle, proportion ->
-                val sweep = proportion * angleOffset
+            values.map { it.proportion }
+                .foldIndexed(startAngle) { index, currentValueStartAngle, proportion ->
+                    val sweep = proportion * angleOffset
 
-                val valueStartAngle = currentValueStartAngle + DividerLengthInDegrees / 2
-                val sweepAngle = sweep - DividerLengthInDegrees
+                    val valueStartAngle = currentValueStartAngle + DividerLengthInDegrees / 2
+                    val sweepAngle = sweep - DividerLengthInDegrees
 
-                angles.value[index] = valueStartAngle to sweepAngle
+                    valueAngleBoundaries.value[index] = valueStartAngle to sweepAngle
 
-                drawArc(
-                    color = colors[index],
-                    startAngle = valueStartAngle,
-                    sweepAngle = sweepAngle,
-                    topLeft = topLeft,
-                    size = size,
-                    useCenter = false,
-                    style = if (selectedArc == index) selectedArcStroke else stroke
+                    val arcTransitionProgress = donutArcTransitionAnimatable[index].value
+
+                    if (arcTransitionProgress == 0f) {
+                        drawArc(
+                            brush = values[index].donutGraphBrush,
+                            startAngle = valueStartAngle,
+                            sweepAngle = sweepAngle + donutArcTransitionAnimatable[index].value * (360f - sweepAngle),
+                            topLeft = if (selectedArc == index) selectedArcTopLeft else topLeft,
+                            size = if (selectedArc == index) selectedArcSize else size,
+                            useCenter = false,
+                            style = if (selectedArc == index) selectedArcStroke else stroke
+                        )
+                    } else if (arcTransitionProgress < 1f) {
+                        val smallTopLeft = Offset(
+                            halfSize.width - collapsedCircleStartRadiusInPx,
+                            halfSize.height - collapsedCircleStartRadiusInPx
+                        )
+
+                        val smallSize =
+                            Size(collapsedCircleStartRadiusInPx, collapsedCircleStartRadiusInPx)
+
+                        val animatedTopLeft = lerp(topLeft, smallTopLeft, arcTransitionProgress)
+                        val animatesSize = lerp(size, smallSize, arcTransitionProgress)
+                        val animatedStroke =
+                            Stroke(collapsedCircleStartRadiusInPx + (1f - arcTransitionProgress) * (stroke.width - collapsedCircleStartRadiusInPx))
+
+                        drawArc(
+                            brush = values[index].donutGraphBrush,
+                            startAngle = valueStartAngle,
+                            sweepAngle = sweepAngle + donutArcTransitionAnimatable[index].value * (360f - sweepAngle),
+                            topLeft = animatedTopLeft,
+                            size = animatesSize,
+                            useCenter = false,
+                            style = animatedStroke
+                        )
+                    }
+
+                    currentValueStartAngle + sweep
+                }
+        }
+
+        val brushes = remember { values.map { it.donutGraphBrush } }
+        brushes.forEachIndexed { index, color ->
+            val arcTransitionProgress = donutArcTransitionAnimatable[index].value
+
+            Column(
+                modifier = Modifier
+                    .align(Alignment.TopStart)
+                    .padding(start = 100.dp, top = (index + 1) * 60.dp, end = 16.dp)
+                    .onPlaced {
+                        circleFinalPositions[index] = IntOffset(
+                            it.positionInParent().x.toInt(),
+                            it.positionInParent().y.toInt()
+                        )
+                    },
+            ) {
+                LinearProgressIndicator(
+                    modifier = Modifier
+                        .height(collapsedCircleEndRadiusInDp)
+                        .graphicsLayer {
+                            alpha = if (arcTransitionProgress == 1f) {
+                                1f
+                            } else {
+                                0f
+                            }
+                        },
+                    progress = linearProgressAnimation[index].value,
+                    strokeCap = ProgressIndicatorDefaults.CircularDeterminateStrokeCap,
+                    color = values[index].progressColor,
+                    trackColor = screenBackgroundColor,
                 )
 
-                currentValueStartAngle + sweep
+                Text(
+                    modifier = Modifier
+                        .graphicsLayer {
+                            alpha = if (arcTransitionProgress == 1f) {
+                                1f
+                            } else {
+                                0f
+                            }
+                        },
+                    text = "$ ${
+                        String.format(
+                            "%.2f",
+                            linearProgressAnimation[index].value * 9999f
+                        )
+                    }",
+                    color = Color(0xFF848dad)
+                )
             }
         }
 
-        Text(
-            modifier = Modifier.align(Alignment.Center),
-            text = "Selected Arc: $selectedArc",
-            color = textColor.value,
-            fontWeight = FontWeight.Bold,
-            fontSize = 40.sp
+        // Transition from the collapsed donut chart to the individual progress positions
+        brushes.forEachIndexed { index, brush ->
+            if (donutArcTransitionAnimatable[index].value == 1f) {
+                val circleRadius = lerp(
+                    collapsedCircleStartRadius,
+                    collapsedCircleEndRadiusInDp,
+                    circleTransitionAnimatable[index].value,
+                )
+
+                val initialPosition = with(LocalDensity.current) {
+                    IntOffset(
+                        x = (screenWidth / 2 - collapsedCircleStartRadius.toPx()).toInt(),
+                        y = (200.dp.toPx() - collapsedCircleStartRadius.toPx() / 2).toInt()
+                    )
+                }
+
+                if (circleTransitionAnimatable[index].value < 1f && circleTransitionAnimatable[index].value > 0f) {
+                    GraphValueIntermediateView(
+                        brush = brush,
+                        circleRadius = circleRadius,
+                        initialPosition = initialPosition,
+//                            x = canvasCenter.value.x.toInt(),
+//                            y = canvasCenter.value.y.toInt()
+//                        ),
+//                        initialPosition = IntOffset(
+//                            x = canvasCenter.value.x.toInt(),
+//                            y = canvasCenter.value.y.toInt()
+//                        ),
+                        circleTransitionAnimationValue = circleTransitionAnimatable[index].value,
+                        finalPosition = circleFinalPositions[index],
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun GraphValueIntermediateView(
+    modifier: Modifier = Modifier,
+    brush: Brush,
+    circleRadius: Dp,
+    circleTransitionAnimationValue: Float,
+    initialPosition: IntOffset,
+    finalPosition: IntOffset,
+) {
+    Box(
+        modifier = modifier
+            .size(circleRadius)
+            .absoluteOffset {
+                val circleCenter = Offset(
+                    (min(
+                        initialPosition.x,
+                        finalPosition.x
+                    ) + abs(initialPosition.x - finalPosition.x) / 2).toFloat(),
+                    (min(
+                        initialPosition.y,
+                        finalPosition.y
+                    ) + abs(initialPosition.y - finalPosition.y) / 2).toFloat()
+                )
+
+                val radius =
+                    sqrt(
+                        (initialPosition.x - circleCenter.x)
+                            .toDouble()
+                            .pow(2.0) + (initialPosition.y - circleCenter.y)
+                            .toDouble()
+                            .pow(2.0)
+                    )
+
+                val initialPositionAngle = calculatePointAngleOnCircle(
+                    point = Offset(
+                        initialPosition.x.toFloat(),
+                        initialPosition.y.toFloat()
+                    ),
+                    circleCenter = circleCenter
+                )
+
+                val finalPositionAngle = calculatePointAngleOnCircle(
+                    point = Offset(
+                        finalPosition.x.toFloat(),
+                        finalPosition.y.toFloat()
+                    ),
+                    circleCenter = circleCenter
+                )
+
+                val sweepAngle = finalPositionAngle - initialPositionAngle
+                val viewAngle = initialPositionAngle + circleTransitionAnimationValue * sweepAngle
+
+                val circleX = circleCenter.x + radius * sin(Math.toRadians(90 - viewAngle))
+                val circleY = circleCenter.y + radius * cos(Math.toRadians(90 - viewAngle))
+
+                IntOffset(circleX.toInt(), circleY.toInt())
+            }
+            .background(
+                brush = brush,
+                shape = RoundedCornerShape(50)
+            )
+    ) {
+
+    }
+}
+
+internal enum class AnimatedCircleProgress { START, END }
+
+@Composable
+fun CustomLinearProgressIndicator(
+    modifier: Modifier = Modifier,
+    progress: Float,
+    brush: Brush,
+    backgroundColor: Color,
+    clipShape: Shape = RoundedCornerShape(16.dp)
+) {
+    Box(
+        modifier = modifier
+            .clip(clipShape)
+            .background(backgroundColor)
+            .height(8.dp)
+    ) {
+        Box(
+            modifier = Modifier
+                .background(brush)
+                .fillMaxHeight()
+                .fillMaxWidth(progress)
         )
     }
 }
-
-fun isPointOnArc(
-    x: Float,
-    y: Float,
-    cx: Float,
-    cy: Float,
-    radius: Float,
-    startAngle: Float,
-    sweepAngle: Float,
-    arcWidth: Float
-): Boolean {
-    val distanceToCenter =
-        sqrt((x - cx).toDouble().pow(2.0) + (y - cy).toDouble().pow(2.0)).toFloat()
-
-    // Check if the point is within the ring defined by the inner radius (r - arcWidth/2) and the outer radius (r + arcWidth/2)
-    val innerRadius = radius - arcWidth / 2
-    val outerRadius = radius + arcWidth / 2
-
-    if (distanceToCenter in innerRadius..outerRadius) {
-        // Calculate the angle between the center of the arc and the given point (x, y)
-        val angleToCenter = Math.toDegrees(atan2((y - cy).toDouble(), (x - cx).toDouble()))
-
-        // Ensure the angle is within the range [0, 360)
-        val normalizedAngleToCenter = if (angleToCenter < 0) angleToCenter + 360 else angleToCenter
-
-        // Ensure the startAngle is within the range [0, 360)
-        val normalizedStartAngle = if (startAngle < 0) startAngle + 360 else startAngle
-
-        // Calculate the angle relative to the startAngle
-        val angleFromStart = (normalizedAngleToCenter - normalizedStartAngle + 360) % 360
-
-        // Check if the angle is within the sweep angle of the arc
-        return angleFromStart <= sweepAngle
-    }
-
-    return false
-}
-
-private enum class AnimatedCircleProgress { START, END }
