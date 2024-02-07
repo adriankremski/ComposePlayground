@@ -1,18 +1,23 @@
-package com.github.snuffix.composeplayground.graphs
+package com.github.snuffix.composeplayground.graphs.donut
 
-import android.util.Log
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.Animatable
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.animation.core.CubicBezierEasing
 import androidx.compose.animation.core.LinearOutSlowInEasing
 import androidx.compose.animation.core.MutableTransitionState
 import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.core.updateTransition
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -27,8 +32,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.AccountCircle
 import androidx.compose.material3.Button
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ProgressIndicatorDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -53,22 +56,20 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.rememberVectorPainter
 import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.onPlaced
 import androidx.compose.ui.layout.positionInParent
-import androidx.compose.ui.layout.positionInRoot
-import androidx.compose.ui.layout.positionInWindow
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.lerp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.unit.times
 import com.github.snuffix.composeplayground.calculatePointAngleOnCircle
 import com.github.snuffix.composeplayground.isPointOnArc
+import kotlinx.coroutines.joinAll
 import kotlinx.coroutines.launch
 import kotlin.math.abs
 import kotlin.math.cos
@@ -84,10 +85,13 @@ private const val DividerLengthInDegrees = 0f
 /**
  * A donut chart that animates when loaded.
  */
-data class ValueData(
+data class UserBudgetState(
     val proportion: Float,
     val progressColor: Color,
-    val donutGraphBrush: Brush
+    val donutGraphBrush: Brush,
+    val value: Float,
+    val total: Float,
+    val userName: String
 )
 
 val screenBackgroundColor = Color(0xFF142057)
@@ -115,45 +119,64 @@ fun DonutChartScreen() {
                     ),
                     shape = RoundedCornerShape(20.dp),
                 )
-                .graphicsLayer {
+                .pointerInput(Unit) {
+                    detectHorizontalDragGestures(
+                        onDragEnd = {
+                            startTransitionAnimation = startTransitionAnimation?.let { !it } ?: true
+                        }
+                    ) { _, _ ->
+                    }
                 }
         ) {
+            val total = 9999f
             ChartView(
                 values = listOf(
-                    ValueData(
+                    UserBudgetState(
                         0.1f,
                         progressColor = Color(0xFF3F4DB1),
                         donutGraphBrush = donutChartGradient(
                             0.3f to Color(0xFF3F4DB1).copy(alpha = 0.85f),
                             0.8f to Color(0xFF353D94)
                         ),
+                        value = 0.1f * total,
+                        total = total,
+                        userName = "Adrian Kremski"
                     ),
-                    ValueData(
+                    UserBudgetState(
                         0.2f,
                         progressColor = Color(0xFFed9b8c),
                         donutChartGradient(
                             0.3f to Color(0xFFed9b8c),
                             0.8f to Color(0xFFb55850)
                         ),
+                        value = 0.2f * total,
+                        total = total,
+                        userName = "John Doe"
                     ),
-                    ValueData(
+                    UserBudgetState(
                         0.6f,
                         progressColor = Color(0xFF9AF2D8),
                         donutChartGradient(
                             0.3f to Color(0xFF9AF2D8),
                             0.8f to Color(0xFF5990AA)
                         ),
+                        value = 0.6f * total,
+                        total = total,
+                        userName = "Jane Doe"
                     ),
-                    ValueData(
+                    UserBudgetState(
                         0.1f,
                         progressColor = Color(0xFFC05977),
                         donutChartGradient(
                             0.3f to Color(0xFFC05977),
                             0.8f to Color(0xFFA54270)
                         ),
+                        value = 0.1f * total,
+                        total = total,
+                        userName = "John Smith"
                     ),
                 ),
-                startTransitionAnimation = startTransitionAnimation
+                changeScreen = startTransitionAnimation
             )
         }
 
@@ -179,9 +202,9 @@ fun donutChartGradient(
 
 @Composable
 fun ChartView(
-    values: List<ValueData>,
+    values: List<UserBudgetState>,
     modifier: Modifier = Modifier,
-    startTransitionAnimation: Boolean?
+    changeScreen: Boolean?
 ) {
     val screenWidth = with(LocalDensity.current) {
         with(LocalConfiguration.current) { screenWidthDp.dp.toPx() }
@@ -228,8 +251,6 @@ fun ChartView(
         mutableFloatStateOf(0f)
     }
 
-    var selectedArc by remember { mutableIntStateOf(0) }
-
     val circleFinalPositions = remember {
         Array(values.size) { IntOffset.Zero }
     }
@@ -243,10 +264,15 @@ fun ChartView(
         Array(values.size) { Animatable(0f) }
     }
 
-    startTransitionAnimation?.let {
-        LaunchedEffect(startTransitionAnimation) {
-            if (startTransitionAnimation) {
-                donutArcTransitionAnimatable.forEachIndexed { index, animatable ->
+    var selectedValueIndex by remember { mutableIntStateOf(0) }
+    var screenState by remember { mutableStateOf(ScreenState.DONUT) }
+
+    changeScreen?.let {
+        LaunchedEffect(changeScreen) {
+            if (changeScreen) {
+                screenState = ScreenState.LINEAR
+
+                donutArcTransitionAnimatable.mapIndexed { index, animatable ->
                     launch {
                         animatable.animateTo(
                             targetValue = 1f,
@@ -273,9 +299,10 @@ fun ChartView(
                             ),
                         )
                     }
-                }
+                }.joinAll()
+
             } else {
-                donutArcTransitionAnimatable.forEachIndexed { index, animatable ->
+                donutArcTransitionAnimatable.mapIndexed { index, animatable ->
                     launch {
                         linearProgressAnimation[index].animateTo(
                             targetValue = 0f,
@@ -301,8 +328,11 @@ fun ChartView(
                                 easing = LinearOutSlowInEasing
                             )
                         )
+
                     }
-                }
+                }.joinAll()
+
+                screenState = ScreenState.DONUT
             }
         }
     }
@@ -314,10 +344,10 @@ fun ChartView(
     val collapsedCircleEndRadiusInPx = 20f
     val collapsedCircleEndRadiusInDp =
         with(LocalDensity.current) { collapsedCircleEndRadiusInPx.toDp() }
-    val containerHeight = 400.dp
+    val containerHeight = 432.dp
     val donutChartHeight = 300.dp
 
-    // The boundaries of each value in the donut chart (start and sweep angles)
+// The boundaries of each value in the donut chart (start and sweep angles)
     val valueAngleBoundaries = remember { mutableStateOf(Array(values.size) { 0f to 0f }) }
     val canvasSize = remember {
         mutableStateOf(Size.Zero)
@@ -334,9 +364,62 @@ fun ChartView(
             .fillMaxWidth()
             .height(containerHeight)
     ) {
+        AnimatedVisibility(
+            modifier = Modifier
+                .align(Alignment.TopStart),
+            visible = screenState == ScreenState.DONUT,
+            enter = fadeIn(),
+            exit = fadeOut()
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(
+                        brush = Brush.verticalGradient(
+                            colors = listOf(
+                                Color(0xFF26387f),
+                                Color(0xFF1d2f63)
+                            )
+                        ),
+                        shape = RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp),
+                    )
+                    .padding(8.dp),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                val userBudgetState = values[selectedValueIndex]
+                Row {
+                    UserAvatar(
+                        modifier = Modifier
+                            .align(Alignment.CenterVertically),
+                        color = userBudgetState.progressColor
+                    )
+
+                    Text(
+                        modifier = Modifier
+                            .align(Alignment.CenterVertically),
+                        text = userBudgetState.userName,
+                        fontSize = 18.sp,
+                        color = userBudgetColor
+                    )
+                }
+
+                val animatedBudget = animateFloatAsState(targetValue = userBudgetState.proportion * userBudgetState.total)
+
+                UserBudgetText(
+                    modifier = Modifier
+                        .align(Alignment.CenterVertically)
+                        .padding(end = 16.dp),
+                    budget = animatedBudget.value,
+                    fontSize = 20.sp,
+                    textColor = Color.White
+                )
+            }
+        }
+
         Canvas(
             modifier
                 .align(Alignment.Center)
+                .padding(top = 84.dp)
                 .fillMaxWidth()
                 .height(donutChartHeight)
                 .pointerInput(values) {
@@ -356,7 +439,7 @@ fun ChartView(
                             )
 
                             if (isOnArc) {
-                                selectedArc = index
+                                selectedValueIndex = index
                             }
                         }
                     }
@@ -401,10 +484,10 @@ fun ChartView(
                             brush = values[index].donutGraphBrush,
                             startAngle = valueStartAngle,
                             sweepAngle = sweepAngle + donutArcTransitionAnimatable[index].value * (360f - sweepAngle),
-                            topLeft = if (selectedArc == index) selectedArcTopLeft else topLeft,
-                            size = if (selectedArc == index) selectedArcSize else size,
+                            topLeft = if (selectedValueIndex == index) selectedArcTopLeft else topLeft,
+                            size = if (selectedValueIndex == index) selectedArcSize else size,
                             useCenter = false,
-                            style = if (selectedArc == index) selectedArcStroke else stroke
+                            style = if (selectedValueIndex == index) selectedArcStroke else stroke
                         )
                     } else if (arcTransitionProgress < 1f) {
                         val smallTopLeft = Offset(
@@ -460,17 +543,13 @@ fun ChartView(
                         }
                 ) {
                     Row {
-                        Image(
+                        UserAvatar(
                             modifier = Modifier
-                                .padding(horizontal = 16.dp)
-                                .size(48.dp)
                                 .align(Alignment.CenterVertically)
                                 .graphicsLayer {
                                     alpha = circleTransitionAnimatable[index].value
                                 },
-                            painter = rememberVectorPainter(image = Icons.Rounded.AccountCircle),
-                            contentDescription = "",
-                            colorFilter = ColorFilter.tint(values[index].progressColor),
+                            color = values[index].progressColor
                         )
 
                         Column(
@@ -494,18 +573,12 @@ fun ChartView(
                                 trackColor = screenBackgroundColor,
                             )
 
-                            Text(
+                            UserBudgetText(
                                 modifier = Modifier
                                     .graphicsLayer {
                                         alpha = circleTransitionAnimatable[index].value
                                     },
-                                text = "$ ${
-                                    String.format(
-                                        "%.2f",
-                                        linearProgressAnimation[index].value * 9999f
-                                    )
-                                }",
-                                color = Color(0xFF848dad)
+                                budget = linearProgressAnimation[index].value * values[index].total,
                             )
                         }
                     }
@@ -617,6 +690,44 @@ fun GraphValueIntermediateView(
 }
 
 internal enum class AnimatedCircleProgress { START, END }
+internal enum class ScreenState { DONUT, LINEAR }
+
+@Composable
+fun UserAvatar(
+    modifier: Modifier = Modifier,
+    color: Color
+) {
+    Image(
+        modifier = modifier
+            .padding(horizontal = 16.dp)
+            .size(48.dp),
+        painter = rememberVectorPainter(image = Icons.Rounded.AccountCircle),
+        contentDescription = "",
+        colorFilter = ColorFilter.tint(color),
+    )
+}
+
+val userBudgetColor = Color(0xFF848dad)
+
+@Composable
+fun UserBudgetText(
+    modifier: Modifier = Modifier,
+    budget: Float,
+    textColor: Color = userBudgetColor,
+    fontSize: TextUnit = 16.sp
+) {
+    Text(
+        modifier = modifier,
+        text = "$ ${
+            String.format(
+                "%.2f",
+                budget
+            )
+        }",
+        fontSize = fontSize,
+        color = textColor
+    )
+}
 
 @Composable
 fun CustomLinearProgressIndicator(

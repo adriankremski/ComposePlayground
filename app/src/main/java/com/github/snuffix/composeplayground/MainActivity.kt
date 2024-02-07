@@ -23,7 +23,7 @@ import androidx.compose.ui.unit.dp
 import com.github.snuffix.composeplayground.bottom_menu.PhotoPickerScreen
 import com.github.snuffix.composeplayground.calendar.CalendarScreen
 import com.github.snuffix.composeplayground.graphs.GradientLegend
-import com.github.snuffix.composeplayground.graphs.DonutChartScreen
+import com.github.snuffix.composeplayground.graphs.donut.DonutChartScreen
 import com.github.snuffix.composeplayground.graphs.SpiralGraph
 import com.github.snuffix.composeplayground.process.ProcessAnimationScreen
 import com.github.snuffix.composeplayground.ui.theme.ComposePlaygroundTheme
