@@ -5,7 +5,12 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -14,6 +19,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.dp
 import com.github.snuffix.composeplayground.bottom_menu.PhotoPickerScreen
 import com.github.snuffix.composeplayground.calendar.CalendarScreen
 import com.github.snuffix.composeplayground.graphs.GradientLegend
@@ -79,11 +85,7 @@ class MainActivity : ComponentActivity() {
                         }
 
                         Screen.PieChart -> {
-//                            DonutChart(
-//                                proportions = listOf(0.1f, 0.2f, 0.6f, 0.1f), colors = listOf(
-//                                    colorLow, colorMid1, colorMid2, colorHigh
-//                                )
-//                            )
+                            DonutChartScreen()
                         }
 
                         Screen.ProcessAnimation -> {
@@ -99,27 +101,23 @@ class MainActivity : ComponentActivity() {
                         }
 
                         null -> {
-                            DonutChartScreen()
-//                            DonutChart(proportions = , colors = )
-//                            TestScreen()
-//                            WeatherScreen()
-//                            Column(
-//                                modifier = Modifier
-//                                    .fillMaxSize()
-//                                    .padding(8.dp),
-//                                verticalArrangement = Arrangement.spacedBy(8.dp)
-//                            ) {
-//                                Screen.values().forEach { screen ->
-//                                    Button(
-//                                        onClick = {
-//                                            selectedScreen.value = screen
-//                                        },
-//                                        modifier = Modifier.fillMaxWidth()
-//                                    ) {
-//                                        Text(screen.name)
-//                                    }
-//                                }
-//                            }
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .padding(8.dp),
+                                verticalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                Screen.values().forEach { screen ->
+                                    Button(
+                                        onClick = {
+                                            selectedScreen.value = screen
+                                        },
+                                        modifier = Modifier.fillMaxWidth()
+                                    ) {
+                                        Text(screen.name)
+                                    }
+                                }
+                            }
                         }
                     }
                 }
