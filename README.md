@@ -8,7 +8,7 @@ Certain recordings featured here may experience lags due to recording quality an
 [camera.webm](https://github.com/adriankremski/ComposePlayground/assets/281360/6cf29044-c3aa-44db-8386-f3d064262869)
 
 ## 3. Custom donut graph transition
-[donut2.webm](https://github.com/adriankremski/ComposePlayground/assets/281360/b2acdc31-37cf-4f60-9319-6348664f7b75)
+https://github.com/adriankremski/ComposePlayground/assets/281360/5dc1c156-237c-44dd-99aa-7719fa713bf0
 
 ## 4. Calendar
 [calendar.webm](https://github.com/adriankremski/ComposePlayground/assets/281360/dff3c9cc-85bd-4430-908b-abcda58f089b)
