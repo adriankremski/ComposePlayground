@@ -1,8 +1,6 @@
 package com.github.snuffix.composeplayground.graphs.donut
 
-import android.util.Log
 import androidx.compose.animation.core.Animatable
-import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.animation.core.CubicBezierEasing
 import androidx.compose.animation.core.LinearOutSlowInEasing
 import androidx.compose.animation.core.MutableTransitionState
@@ -10,24 +8,23 @@ import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.core.updateTransition
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.AccountCircle
 import androidx.compose.material3.Button
-import androidx.compose.material3.ProgressIndicatorDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -36,6 +33,7 @@ import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -48,7 +46,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.drawscope.Stroke
-import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.rememberVectorPainter
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onPlaced
@@ -63,6 +60,7 @@ import androidx.compose.ui.unit.sp
 import com.github.snuffix.composeplayground.isPointOnArc
 import kotlinx.coroutines.joinAll
 import kotlinx.coroutines.launch
+import kotlin.math.abs
 
 
 // Spacing between each slice of the pie chart.
@@ -130,6 +128,7 @@ private val userBudgetList = listOf(
     ),
 )
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun DonutChartScreen() {
     Box(
@@ -137,9 +136,15 @@ fun DonutChartScreen() {
             .fillMaxSize()
             .background(screenBackgroundColor)
     ) {
+        // This boolean should be an enum probably
         var startTransitionAnimation by remember {
             mutableStateOf<Boolean?>(null)
         }
+
+        var currentPage by remember { mutableStateOf(0) }
+        val state = rememberPagerState(initialPage = currentPage) { 2 }
+        var dragAmountSum by remember { mutableFloatStateOf(0f) }
+        val scope = rememberCoroutineScope()
 
         Box(
             modifier = Modifier
@@ -155,12 +160,25 @@ fun DonutChartScreen() {
                 )
                 .pointerInput(Unit) {
                     detectHorizontalDragGestures(
+                        onDragStart = {
+                            dragAmountSum = 0f
+                        },
                         onDragEnd = {
-                            startTransitionAnimation = startTransitionAnimation?.let { !it } ?: true
+                            if (dragAmountSum < 0) {
+                                if (abs(dragAmountSum) >= 200) {
+                                    startTransitionAnimation = true
+                                    currentPage = 1
+                                }
+                            } else {
+                                if (abs(dragAmountSum) >= 200) {
+                                    startTransitionAnimation = false
+                                    currentPage = 0
+                                }
+                            }
                         }
                     ) { change, dragAmount ->
                         change.consume()
-                        Log.i("AdrianTest", "Drag amount: $dragAmount")
+                        dragAmountSum += dragAmount
                     }
                 }
         ) {
@@ -168,21 +186,23 @@ fun DonutChartScreen() {
                 changeScreen = startTransitionAnimation,
                 userBudgetList = userBudgetList
             )
-        }
 
-        Button(
-            onClick = {
-                startTransitionAnimation = startTransitionAnimation?.let { !it } ?: true
-            },
-            modifier = Modifier.align(Alignment.BottomCenter)
-        ) {
-            Text(
-                text = "Animate graph",
-                fontSize = 20.sp,
-                fontWeight = FontWeight.Bold,
-                color = Color.White,
+            PageIndicator(
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .padding(bottom = 8.dp),
+                count = 2,
+                selectedPage = currentPage
             )
         }
+
+        Text(
+            modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 16.dp),
+            text = "Swipe to Animate",
+            fontSize = 20.sp,
+            fontWeight = FontWeight.Bold,
+            color = Color.White,
+        )
     }
 }
 
@@ -328,7 +348,7 @@ fun ChartView(
 
     val collapsedCircleStartRadius = with(LocalDensity.current) { 60f.toDp() }
     val collapsedCircleEndRadiusInDp = with(LocalDensity.current) { 20f.toDp() }
-    val containerHeight = 432.dp
+    val containerHeight = 480.dp
     val donutChartHeight = 300.dp
 
     // The boundaries of each value in the donut chart (start and sweep angles)
@@ -491,12 +511,15 @@ fun ChartView(
 
                 val initialPosition = with(LocalDensity.current) {
                     IntOffset(
-                        x = donutCanvasCenter.value.x.toInt() - collapsedCircleStartRadius.toPx().toInt(),
-                        y = donutCanvasCenter.value.y.toInt() - collapsedCircleStartRadius.toPx().toInt()
+                        x = donutCanvasCenter.value.x.toInt() - collapsedCircleStartRadius.toPx()
+                            .toInt(),
+                        y = donutCanvasCenter.value.y.toInt() - collapsedCircleStartRadius.toPx()
+                            .toInt()
                     )
                 }
 
-                val isCircleTransitionAnimationRunning = circleTransitionAnimatable[index].value > 0f && circleTransitionAnimatable[index].value < 1f
+                val isCircleTransitionAnimationRunning =
+                    circleTransitionAnimatable[index].value > 0f && circleTransitionAnimatable[index].value < 1f
 
                 // If circles transition is not running, don't draw them
                 if (isCircleTransitionAnimationRunning) {
