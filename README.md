@@ -12,7 +12,7 @@ Certain recordings featured here may experience lags due to recording quality an
 https://github.com/adriankremski/ComposePlayground/assets/281360/5dc1c156-237c-44dd-99aa-7719fa713bf0
 
 ## 4. Animated Bottom Menu
-[bottom_menu.webm](https://github.com/adriankremski/ComposePlayground/assets/281360/1cd9b262-3b36-4bed-8879-28f1ad221780)
+https://github.com/adriankremski/ComposePlayground/assets/281360/7c24b31e-dd7f-42f8-9c0a-3f7ca45acd4f
 
 ## 5. Calendar
 [calendar.webm](https://github.com/adriankremski/ComposePlayground/assets/281360/dff3c9cc-85bd-4430-908b-abcda58f089b)
