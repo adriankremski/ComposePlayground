@@ -57,49 +57,13 @@ val selectedMenuItemColor = Color.Black
 
 
 @Composable
-fun BottomMenuScreen(menuItems: IntRange = 0..4) {
+fun BottomMenuScreen() {
     Box(
         modifier = Modifier
             .fillMaxSize()
             .background(screenBackgroundColor)
 
     ) {
-        val menuItemsCount = menuItems.count()
-        var selectedItemIndex by remember { mutableIntStateOf(0) }
-        var previouslySelectedItemIndex by remember { mutableIntStateOf(0) }
-
-        var selectedMenuItemColorAnimation =
-            animateColorAsState(targetValue = selectedMenuItemColor)
-
-        var menuItemAnimation = remember { Animatable(1f) }
-        val scope = rememberCoroutineScope()
-
-        Slider(
-            modifier = Modifier.padding(16.dp),
-            value = selectedItemIndex.toFloat(),
-            onValueChange = {
-                scope.launch {
-                    if (selectedItemIndex != it.toInt()) {
-                        previouslySelectedItemIndex = selectedItemIndex
-                        selectedItemIndex = it.toInt()
-                        menuItemAnimation.snapTo(0f)
-                        menuItemAnimation.animateTo(
-                            targetValue = 1f,
-                            animationSpec = tween(
-                                durationMillis = 600,
-                                easing = LinearOutSlowInEasing
-                            )
-                        )
-                    }
-                }
-            },
-            valueRange = 0.0f..menuItemsCount.toFloat() - 1,
-            colors = SliderDefaults.colors(
-                thumbColor = stepFinishedColor,
-                activeTrackColor = stepFinishedColor,
-            )
-        )
-
         val menuItems = remember {
             listOf(
                 MenuItem(Icons.Default.Home),
@@ -109,6 +73,13 @@ fun BottomMenuScreen(menuItems: IntRange = 0..4) {
                 MenuItem(Icons.Default.Person)
             )
         }
+
+        val menuItemsCount = menuItems.count()
+        var selectedItemIndex by remember { mutableIntStateOf(0) }
+        var previouslySelectedItemIndex by remember { mutableIntStateOf(0) }
+
+        val menuItemAnimation = remember { Animatable(1f) }
+        val scope = rememberCoroutineScope()
 
         val screenWidth =
             with(LocalContext.current) { resources.displayMetrics.widthPixels.toFloat() }
@@ -176,48 +147,7 @@ fun BottomMenuScreen(menuItems: IntRange = 0..4) {
                     )
                 }
         ) {
-            val path = Path()
-            path.moveTo(0f, 0f)
-
-            val startX = 0f
-            val width = indentationWidth
-            val bottomWidth = 0f
-
-            path.lineTo(startX + xTranslation, 0f)
-
-            val controlPointDistance = width / 5f
-            val firstControlPoint = Offset(startX + controlPointDistance, 0f)
-            val secondControlPoint = Offset(startX + controlPointDistance, indentationHeight)
-
-            path.cubicTo(
-                firstControlPoint.x + xTranslation,
-                firstControlPoint.y,
-                secondControlPoint.x + xTranslation,
-                secondControlPoint.y,
-                startX + width / 2f + bottomWidth / 2f + xTranslation,
-                indentationHeight
-            )
-
-            val firstControlPoint2 =
-                Offset(startX + width + bottomWidth - controlPointDistance, indentationHeight)
-            val secondControlPoint2 =
-                Offset(startX + width + bottomWidth - controlPointDistance, 0f)
-
-            path.lineTo(startX + width / 2 + bottomWidth + xTranslation, indentationHeight)
-            path.cubicTo(
-                firstControlPoint2.x + xTranslation,
-                firstControlPoint2.y,
-                secondControlPoint2.x + xTranslation,
-                secondControlPoint2.y,
-                startX + width + bottomWidth + xTranslation,
-                0f
-            )
-
-            path.lineTo(size.width, 0f)
-            path.lineTo(size.width, size.height)
-            path.lineTo(0f, size.height)
-            path.close()
-            drawPath(path, Color.White)
+            drawMenuBackground(indentationWidth, xTranslation, indentationHeight)
 
             menuItems.forEachIndexed { index, item ->
                 val menuItemXPosition =
@@ -264,6 +194,52 @@ fun BottomMenuScreen(menuItems: IntRange = 0..4) {
                 )
             }
         }
+    }
+}
+
+private fun DrawScope.drawMenuBackground(
+    indentationWidth: Float,
+    selectedItemIndentationXTranslation: Float,
+    indentationHeight: Float
+) {
+    with(Path()) {
+        moveTo(0f, 0f)
+
+        lineTo(selectedItemIndentationXTranslation, 0f)
+
+        val xDistanceToControlPoint = indentationWidth / 5f
+        val startSegmentFirstControlPoint = Offset(xDistanceToControlPoint, 0f)
+        val startSegmentSecondControlPoint = Offset(xDistanceToControlPoint, indentationHeight)
+
+        cubicTo(
+            x1 = startSegmentFirstControlPoint.x + selectedItemIndentationXTranslation,
+            y1 = startSegmentFirstControlPoint.y,
+            x2 = startSegmentSecondControlPoint.x + selectedItemIndentationXTranslation,
+            y2 = startSegmentSecondControlPoint.y,
+            x3 = indentationWidth / 2f + selectedItemIndentationXTranslation,
+            y3 = indentationHeight
+        )
+
+        val endSegmentFirstControlPoint =
+            Offset(indentationWidth - xDistanceToControlPoint, indentationHeight)
+        val endSegmentSecondControlPoint =
+            Offset(indentationWidth - xDistanceToControlPoint, 0f)
+
+        cubicTo(
+            x1 = endSegmentFirstControlPoint.x + selectedItemIndentationXTranslation,
+            y1 = endSegmentFirstControlPoint.y,
+            x2 = endSegmentSecondControlPoint.x + selectedItemIndentationXTranslation,
+            y2 = endSegmentSecondControlPoint.y,
+            x3 = indentationWidth + selectedItemIndentationXTranslation,
+            y3 = 0f
+        )
+
+        lineTo(size.width, 0f)
+        lineTo(size.width, size.height)
+        lineTo(0f, size.height)
+        close()
+
+        drawPath(this, Color.White)
     }
 }
 
