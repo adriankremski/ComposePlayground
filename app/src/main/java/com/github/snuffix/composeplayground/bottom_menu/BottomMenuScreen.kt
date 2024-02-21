@@ -35,9 +35,11 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.translate
 import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.graphics.vector.VectorPainter
 import androidx.compose.ui.graphics.vector.rememberVectorPainter
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
@@ -63,8 +65,8 @@ fun BottomMenuScreen(menuItems: IntRange = 0..4) {
 
     ) {
         val menuItemsCount = menuItems.count()
-        var selectedMenuItem by remember { mutableIntStateOf(0) }
-        var previouslySelectedMenuItem by remember { mutableIntStateOf(0) }
+        var selectedItemIndex by remember { mutableIntStateOf(0) }
+        var previouslySelectedItemIndex by remember { mutableIntStateOf(0) }
 
         var selectedMenuItemColorAnimation =
             animateColorAsState(targetValue = selectedMenuItemColor)
@@ -74,12 +76,12 @@ fun BottomMenuScreen(menuItems: IntRange = 0..4) {
 
         Slider(
             modifier = Modifier.padding(16.dp),
-            value = selectedMenuItem.toFloat(),
+            value = selectedItemIndex.toFloat(),
             onValueChange = {
                 scope.launch {
-                    if (selectedMenuItem != it.toInt()) {
-                        previouslySelectedMenuItem = selectedMenuItem
-                        selectedMenuItem = it.toInt()
+                    if (selectedItemIndex != it.toInt()) {
+                        previouslySelectedItemIndex = selectedItemIndex
+                        selectedItemIndex = it.toInt()
                         menuItemAnimation.snapTo(0f)
                         menuItemAnimation.animateTo(
                             targetValue = 1f,
@@ -114,13 +116,13 @@ fun BottomMenuScreen(menuItems: IntRange = 0..4) {
         val indentationWidth = screenWidth / (menuItemsCount - 2)
 
         val menuItemPosition =
-            indentationWidth / 2 + selectedMenuItem * (screenWidth - indentationWidth / 2) / menuItemsCount
+            indentationWidth / 2 + selectedItemIndex * (screenWidth - indentationWidth / 2) / menuItemsCount
 
         val xTranslationAnim = animateFloatAsState(
             targetValue = menuItemPosition - indentationWidth / 2,
             label = "",
             animationSpec = tween(
-                durationMillis = (600L - 100L * abs((selectedMenuItem - previouslySelectedMenuItem))).toInt(),
+                durationMillis = (600L - 100L * abs((selectedItemIndex - previouslySelectedItemIndex))).toInt(),
                 easing = LinearOutSlowInEasing
             )
         )
@@ -130,8 +132,8 @@ fun BottomMenuScreen(menuItems: IntRange = 0..4) {
             rememberVectorPainter(image = menuItem.imageBitmap)
         }
 
-        val menuItemSize = 60f
-        val menuItemBackgroundCircleRadius = menuItemSize * 1.2f
+        val menuIconSize = 60f
+        val menuItemBackgroundCircleRadius = menuIconSize * 1.2f
         val indentationHeight = 120f
 
         Canvas(
@@ -155,9 +157,9 @@ fun BottomMenuScreen(menuItems: IntRange = 0..4) {
 
                                 if (menuItemRect.contains(offset.x, offset.y)) {
                                     scope.launch {
-                                        if (selectedMenuItem != index) {
-                                            previouslySelectedMenuItem = selectedMenuItem
-                                            selectedMenuItem = index
+                                        if (selectedItemIndex != index) {
+                                            previouslySelectedItemIndex = selectedItemIndex
+                                            selectedItemIndex = index
                                             menuItemAnimation.snapTo(0f)
                                             menuItemAnimation.animateTo(
                                                 targetValue = 1f,
@@ -218,86 +220,108 @@ fun BottomMenuScreen(menuItems: IntRange = 0..4) {
             drawPath(path, Color.White)
 
             menuItems.forEachIndexed { index, item ->
-                val menuItemPosition =
+                val menuItemXPosition =
                     indentationWidth / 2 + index * (screenWidth - indentationWidth / 2) / menuItemsCount
 
-                with(menuItemsBitmaps[index]) {
-                    val circleStartTop = if (index == previouslySelectedMenuItem) {
-                        0f - menuItemBackgroundCircleRadius / 2
-                    } else {
-                        indentationHeight / 2
-                    }
-
-                    val circleTargetTop = if (index == selectedMenuItem) {
-                        0f - menuItemBackgroundCircleRadius / 2
-                    } else {
-                        indentationHeight / 2
-                    }
-
-                    val circleTop =
-                        circleStartTop + (circleTargetTop - circleStartTop) * menuItemAnimation.value
-
-                    translate(
-                        left = menuItemPosition - menuItemBackgroundCircleRadius / 2,
-                        top = circleTop
-                    ) {
-                        drawCircle(
-                            Color.White,
-                            menuItemBackgroundCircleRadius,
-                            Offset(
-                                menuItemBackgroundCircleRadius / 2,
-                                menuItemBackgroundCircleRadius / 2
-                            )
-                        )
-                    }
-
-                    val startTop = if (index == previouslySelectedMenuItem) {
-                        0f - menuItemSize / 2
-                    } else {
-                        indentationHeight / 2 - menuItemSize / 2
-                    }
-
-                    val targetTop = if (index == selectedMenuItem) {
-                        0f - menuItemSize / 2
-                    } else {
-                        indentationHeight / 2 - menuItemSize / 2
-                    }
-
-                    val top = startTop + (targetTop - startTop) * menuItemAnimation.value
-
-                    translate(
-                        left = menuItemPosition - menuItemSize / 2,
-                        top = top
-                    ) {
-                        draw(
-                            size = Size(menuItemSize, menuItemSize),
-                            colorFilter = ColorFilter.tint(
-                                when (index) {
-                                    selectedMenuItem -> {
-                                        lerp(
-                                            unselectedMenuItemColor,
-                                            selectedMenuItemColor,
-                                            menuItemAnimation.value
-                                        )
-                                    }
-
-                                    previouslySelectedMenuItem -> {
-                                        lerp(
-                                            selectedMenuItemColor,
-                                            unselectedMenuItemColor,
-                                            menuItemAnimation.value
-                                        )
-                                    }
-
-                                    else -> {
-                                        unselectedMenuItemColor
-                                    }
-                                }
-                            )
-                        )
-                    }
+                val circleStartTop = if (index == previouslySelectedItemIndex) {
+                    0f - menuItemBackgroundCircleRadius / 2
+                } else {
+                    indentationHeight / 2
                 }
+
+                val circleTargetTop = if (index == selectedItemIndex) {
+                    0f - menuItemBackgroundCircleRadius / 2
+                } else {
+                    indentationHeight / 2
+                }
+
+                val circleTop =
+                    circleStartTop + (circleTargetTop - circleStartTop) * menuItemAnimation.value
+
+                translate(
+                    left = menuItemXPosition - menuItemBackgroundCircleRadius / 2,
+                    top = circleTop
+                ) {
+                    drawCircle(
+                        Color.White,
+                        menuItemBackgroundCircleRadius,
+                        Offset(
+                            menuItemBackgroundCircleRadius / 2,
+                            menuItemBackgroundCircleRadius / 2
+                        )
+                    )
+                }
+
+                drawMenuIcon(
+                    icon = menuItemsBitmaps[index],
+                    itemIndex = index,
+                    previouslySelectedItemIndex = previouslySelectedItemIndex,
+                    iconSize = menuIconSize,
+                    indentationHeight = indentationHeight,
+                    selectedItemIndex = selectedItemIndex,
+                    itemAnimationFraction = menuItemAnimation.value,
+                    itemXPosition = menuItemXPosition
+                )
             }
+        }
+    }
+}
+
+private fun DrawScope.drawMenuIcon(
+    icon: VectorPainter,
+    itemIndex: Int,
+    selectedItemIndex: Int,
+    previouslySelectedItemIndex: Int,
+    iconSize: Float,
+    indentationHeight: Float,
+    itemAnimationFraction: Float,
+    itemXPosition: Float
+) {
+    with(icon) {
+        val startTop = if (itemIndex == previouslySelectedItemIndex) {
+            0f - iconSize / 2
+        } else {
+            indentationHeight / 2 - iconSize / 2
+        }
+
+        val targetTop = if (itemIndex == selectedItemIndex) {
+            0f - iconSize / 2
+        } else {
+            indentationHeight / 2 - iconSize / 2
+        }
+
+        val top = startTop + (targetTop - startTop) * itemAnimationFraction
+
+        translate(
+            left = itemXPosition - iconSize / 2,
+            top = top
+        ) {
+            draw(
+                size = Size(iconSize, iconSize),
+                colorFilter = ColorFilter.tint(
+                    when (itemIndex) {
+                        selectedItemIndex -> {
+                            lerp(
+                                unselectedMenuItemColor,
+                                selectedMenuItemColor,
+                                itemAnimationFraction
+                            )
+                        }
+
+                        previouslySelectedItemIndex -> {
+                            lerp(
+                                selectedMenuItemColor,
+                                unselectedMenuItemColor,
+                                itemAnimationFraction
+                            )
+                        }
+
+                        else -> {
+                            unselectedMenuItemColor
+                        }
+                    }
+                )
+            )
         }
     }
 }
