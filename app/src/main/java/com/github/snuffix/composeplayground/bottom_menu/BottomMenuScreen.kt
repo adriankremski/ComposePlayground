@@ -1,7 +1,6 @@
 package com.github.snuffix.composeplayground.bottom_menu
 
 import android.graphics.RectF
-import android.util.Log
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.LinearOutSlowInEasing
 import androidx.compose.animation.core.animateFloatAsState
@@ -77,6 +76,8 @@ fun BottomMenuScreen() {
 
         val menuItemYPositionAnimation = remember { Animatable(1f) }
         val menuItemXPositionAnimation = remember { Animatable(1f) }
+
+        val indentationHeightFraction = remember { Animatable(0f) }
         val scope = rememberCoroutineScope()
 
         val screenWidth =
@@ -87,15 +88,23 @@ fun BottomMenuScreen() {
         val menuItemPosition =
             indentationWidth / 2 + selectedItemIndex * (screenWidth - indentationWidth / 2) / menuItemsCount
 
+        // Check if the selected item is on the opposite edge of the previously selected item
+        val indexDifference = abs(selectedItemIndex - previouslySelectedItemIndex)
+        val animatingFromOpposedEdge = indexDifference == menuItems.size - 1
+
         val xTranslationAnim = animateFloatAsState(
             targetValue = menuItemPosition - indentationWidth / 2,
             label = "",
             animationSpec = tween(
-                durationMillis = (600L - 100L * abs((selectedItemIndex - previouslySelectedItemIndex))).toInt(),
+                durationMillis = if (animatingFromOpposedEdge) {
+                    400
+                } else {
+                    200 + indexDifference * 50
+                },
                 easing = LinearOutSlowInEasing
             )
         )
-        val xTranslation = xTranslationAnim.value
+        val selectedItemIndentationXTranslation = xTranslationAnim.value
 
         val menuItemsBitmaps = menuItems.map { menuItem ->
             rememberVectorPainter(image = menuItem.imageBitmap)
@@ -111,9 +120,9 @@ fun BottomMenuScreen() {
                 .height(80.dp)
                 .fillMaxWidth()
                 .pointerInput(Unit) {
-                    detectTapGestures(
-                        onTap = { offset ->
-                            menuItems.forEachIndexed { index, _ ->
+                    fun getTouchedItemIndex(offset: Offset): Int? {
+                        return menuItems
+                            .filterIndexed { index, _ ->
                                 val menuItemPosition =
                                     indentationWidth / 2 + index * (screenWidth - indentationWidth / 2) / menuItemsCount
 
@@ -124,11 +133,59 @@ fun BottomMenuScreen() {
                                     indentationHeight / 2 + menuItemBackgroundCircleRadius
                                 )
 
-                                if (menuItemRect.contains(offset.x, offset.y)) {
+                                menuItemRect.contains(offset.x, offset.y)
+                            }
+                            .firstOrNull()
+                            ?.let {
+                                menuItems.indexOf(it)
+                            }
+                    }
+
+                    detectTapGestures(
+                        onTap = { offset ->
+                            getTouchedItemIndex(offset)?.let { index ->
+                                if (selectedItemIndex != index) {
                                     scope.launch {
-                                        if (selectedItemIndex != index) {
-                                            previouslySelectedItemIndex = selectedItemIndex
-                                            selectedItemIndex = index
+                                        previouslySelectedItemIndex = selectedItemIndex
+                                        selectedItemIndex = index
+
+                                        if (abs(selectedItemIndex - previouslySelectedItemIndex) == menuItemsCount - 1) {
+                                            launch {
+                                                menuItemYPositionAnimation.snapTo(0f)
+                                                menuItemYPositionAnimation.animateTo(
+                                                    targetValue = 1f,
+                                                    animationSpec = tween(
+                                                        delayMillis = 200,
+                                                        durationMillis = 400,
+                                                        easing = LinearOutSlowInEasing
+                                                    )
+                                                )
+                                            }
+                                            launch {
+                                                menuItemXPositionAnimation.snapTo(0f)
+                                                menuItemXPositionAnimation.animateTo(
+                                                    targetValue = 1f,
+                                                    animationSpec = tween(
+                                                        delayMillis = 200,
+                                                        durationMillis = 700,
+                                                    )
+                                                )
+                                            }
+                                            indentationHeightFraction.snapTo(0f)
+                                            indentationHeightFraction.animateTo(
+                                                targetValue = 1.5f,
+                                                animationSpec = tween(
+                                                    durationMillis = 200,
+                                                )
+                                            )
+                                            indentationHeightFraction.animateTo(
+                                                targetValue = 0f,
+                                                animationSpec = tween(
+                                                    delayMillis = 200,
+                                                    durationMillis = 200,
+                                                )
+                                            )
+                                        } else {
                                             launch {
                                                 menuItemYPositionAnimation.snapTo(0f)
                                                 menuItemYPositionAnimation.animateTo(
@@ -156,75 +213,28 @@ fun BottomMenuScreen() {
                     )
                 }
         ) {
-            drawMenuBackground(indentationWidth, xTranslation, indentationHeight)
+            drawMenuBackground(
+                indentationWidth = indentationWidth,
+                selectedItemIndentationXTranslation = selectedItemIndentationXTranslation,
+                indentationHeight = indentationHeight,
+                indentationHeightFraction = indentationHeightFraction.value
+            )
 
-            val isOddItemCount = menuItemsCount % 2 != 0
-
-            menuItems.forEachIndexed { index, item ->
+            menuItems.forEachIndexed { index, _ ->
                 val menuItemXPosition =
                     indentationWidth / 2 + index * (screenWidth - indentationWidth / 2) / menuItemsCount
 
-                val circleStartTop = if (index == previouslySelectedItemIndex) {
-                    0f - menuItemBackgroundCircleRadius / 2
-                } else {
-                    indentationHeight / 2
-                }
-
-                val circleTargetTop = if (index == selectedItemIndex) {
-                    0f - menuItemBackgroundCircleRadius / 2
-                } else {
-                    indentationHeight / 2
-                }
-
-                val circleTop =
-                    circleStartTop + (circleTargetTop - circleStartTop) * menuItemYPositionAnimation.value
-
-                val circleStartLeft =
-                    if (isOddItemCount && index == menuItems.size / 2) {
-                        menuItemXPosition - menuItemBackgroundCircleRadius / 2
-                    } else if (index == selectedItemIndex && selectedItemIndex != previouslySelectedItemIndex) {
-                        if (selectedItemIndex > previouslySelectedItemIndex) {
-                            // Animate enter translation from right to left
-                            menuItemXPosition
-                        } else {
-                            // Animate enter translation from left to right
-                            menuItemXPosition - menuItemBackgroundCircleRadius
-                        }
-                    } else {
-                        menuItemXPosition - menuItemBackgroundCircleRadius / 2
-                    }
-
-                val circleEndLeft =
-                    if (isOddItemCount && index == menuItems.size / 2) {
-                        menuItemXPosition - menuItemBackgroundCircleRadius / 2
-                    } else if (index == previouslySelectedItemIndex && selectedItemIndex != previouslySelectedItemIndex) {
-                        if (selectedItemIndex > previouslySelectedItemIndex) {
-                            // Animate exit translation to left
-                            menuItemXPosition - menuItemBackgroundCircleRadius
-                        } else {
-                            // Animate exit translation to right
-                            menuItemXPosition + menuItemBackgroundCircleRadius / 2
-                        }
-                    } else {
-                        menuItemXPosition - menuItemBackgroundCircleRadius / 2
-                    }
-
-                val circleLeft =
-                    circleStartLeft + (circleEndLeft - circleStartLeft) * menuItemXPositionAnimation.value
-
-                translate(
-                    left = circleLeft,
-                    top = circleTop
-                ) {
-                    drawCircle(
-                        Color.White,
-                        menuItemBackgroundCircleRadius,
-                        Offset(
-                            menuItemBackgroundCircleRadius / 2,
-                            menuItemBackgroundCircleRadius / 2
-                        )
-                    )
-                }
+                drawItemBackgroundCircle(
+                    index = index,
+                    previouslySelectedItemIndex = previouslySelectedItemIndex,
+                    menuItemBackgroundCircleRadius = menuItemBackgroundCircleRadius,
+                    indentationHeight = indentationHeight,
+                    selectedItemIndex = selectedItemIndex,
+                    menuItemYPositionAnimationFraction = menuItemYPositionAnimation.value,
+                    itemsCount = menuItemsCount,
+                    menuItemXPosition = menuItemXPosition,
+                    menuItemXPositionAnimationFraction = menuItemXPositionAnimation.value
+                )
 
                 drawMenuIcon(
                     icon = menuItemsBitmaps[index],
@@ -241,10 +251,99 @@ fun BottomMenuScreen() {
     }
 }
 
+private fun DrawScope.drawItemBackgroundCircle(
+    index: Int,
+    selectedItemIndex: Int,
+    previouslySelectedItemIndex: Int,
+    itemsCount: Int,
+    menuItemBackgroundCircleRadius: Float,
+    indentationHeight: Float,
+    menuItemYPositionAnimationFraction: Float,
+    menuItemXPositionAnimationFraction: Float,
+    menuItemXPosition: Float,
+) {
+    val circleStartTop = if (index == previouslySelectedItemIndex) {
+        0f - menuItemBackgroundCircleRadius / 2
+    } else {
+        indentationHeight / 2
+    }
+
+    val circleTargetTop = if (index == selectedItemIndex) {
+        0f - menuItemBackgroundCircleRadius / 2
+    } else {
+        indentationHeight / 2
+    }
+
+    val circleTop =
+        circleStartTop + (circleTargetTop - circleStartTop) * menuItemYPositionAnimationFraction
+
+    val isOddItemCount = itemsCount % 2 != 0
+
+    val circleStartLeft =
+        if (isOddItemCount && index == itemsCount / 2) {
+            menuItemXPosition - menuItemBackgroundCircleRadius / 2
+        } else if (index == selectedItemIndex && selectedItemIndex != previouslySelectedItemIndex) {
+            if (selectedItemIndex > previouslySelectedItemIndex) {
+                if (abs(previouslySelectedItemIndex - selectedItemIndex) == itemsCount - 1) {
+                    // Animate enter translation from left to right
+                    menuItemXPosition - menuItemBackgroundCircleRadius
+                } else {
+                    // Animate enter translation from right to left
+                    menuItemXPosition
+                }
+            } else {
+                if (abs(previouslySelectedItemIndex - selectedItemIndex) == itemsCount - 1) {
+                    // Animate enter translation from right to left
+                    menuItemXPosition
+                } else {
+                    // Animate enter translation from left to right
+                    menuItemXPosition - menuItemBackgroundCircleRadius
+                }
+            }
+        } else {
+            menuItemXPosition - menuItemBackgroundCircleRadius / 2
+        }
+
+    val circleEndLeft =
+        if (isOddItemCount && index == itemsCount / 2) {
+            menuItemXPosition - menuItemBackgroundCircleRadius / 2
+        } else if (index == previouslySelectedItemIndex && selectedItemIndex != previouslySelectedItemIndex) {
+            if (selectedItemIndex > previouslySelectedItemIndex) {
+                // Animate exit translation to left
+                menuItemXPosition - menuItemBackgroundCircleRadius
+            } else {
+                // Animate exit translation to right
+                menuItemXPosition + menuItemBackgroundCircleRadius / 2
+            }
+        } else {
+            menuItemXPosition - menuItemBackgroundCircleRadius / 2
+        }
+
+    val circleLeft =
+        circleStartLeft + (circleEndLeft - circleStartLeft) * menuItemXPositionAnimationFraction
+
+    if (index == selectedItemIndex || index == previouslySelectedItemIndex) {
+        translate(
+            left = circleLeft,
+            top = circleTop
+        ) {
+            drawCircle(
+                Color.White,
+                menuItemBackgroundCircleRadius,
+                Offset(
+                    menuItemBackgroundCircleRadius / 2,
+                    menuItemBackgroundCircleRadius / 2
+                )
+            )
+        }
+    }
+}
+
 private fun DrawScope.drawMenuBackground(
     indentationWidth: Float,
     selectedItemIndentationXTranslation: Float,
-    indentationHeight: Float
+    indentationHeight: Float,
+    indentationHeightFraction: Float = 0f
 ) {
     with(Path()) {
         moveTo(0f, 0f)
@@ -257,11 +356,11 @@ private fun DrawScope.drawMenuBackground(
 
         cubicTo(
             x1 = startSegmentFirstControlPoint.x + selectedItemIndentationXTranslation,
-            y1 = startSegmentFirstControlPoint.y,
+            y1 = startSegmentFirstControlPoint.y - startSegmentFirstControlPoint.y * indentationHeightFraction,
             x2 = startSegmentSecondControlPoint.x + selectedItemIndentationXTranslation,
-            y2 = startSegmentSecondControlPoint.y,
+            y2 = startSegmentSecondControlPoint.y - startSegmentSecondControlPoint.y * indentationHeightFraction,
             x3 = indentationWidth / 2f + selectedItemIndentationXTranslation,
-            y3 = indentationHeight
+            y3 = indentationHeight - indentationHeight * indentationHeightFraction
         )
 
         val endSegmentFirstControlPoint =
@@ -271,9 +370,9 @@ private fun DrawScope.drawMenuBackground(
 
         cubicTo(
             x1 = endSegmentFirstControlPoint.x + selectedItemIndentationXTranslation,
-            y1 = endSegmentFirstControlPoint.y,
+            y1 = endSegmentFirstControlPoint.y - endSegmentFirstControlPoint.y * indentationHeightFraction,
             x2 = endSegmentSecondControlPoint.x + selectedItemIndentationXTranslation,
-            y2 = endSegmentSecondControlPoint.y,
+            y2 = endSegmentSecondControlPoint.y - endSegmentSecondControlPoint.y * indentationHeightFraction,
             x3 = indentationWidth + selectedItemIndentationXTranslation,
             y3 = 0f
         )
