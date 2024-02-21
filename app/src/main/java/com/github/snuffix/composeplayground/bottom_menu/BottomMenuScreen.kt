@@ -1,7 +1,7 @@
 package com.github.snuffix.composeplayground.bottom_menu
 
 import android.graphics.RectF
-import androidx.compose.animation.animateColorAsState
+import android.util.Log
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.LinearOutSlowInEasing
 import androidx.compose.animation.core.animateFloatAsState
@@ -13,15 +13,12 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Call
 import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.List
 import androidx.compose.material.icons.filled.Person
-import androidx.compose.material3.Slider
-import androidx.compose.material3.SliderDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -43,8 +40,8 @@ import androidx.compose.ui.graphics.vector.VectorPainter
 import androidx.compose.ui.graphics.vector.rememberVectorPainter
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
-import com.github.snuffix.composeplayground.process.stepFinishedColor
 import kotlinx.coroutines.launch
 import kotlin.math.abs
 
@@ -78,7 +75,8 @@ fun BottomMenuScreen() {
         var selectedItemIndex by remember { mutableIntStateOf(0) }
         var previouslySelectedItemIndex by remember { mutableIntStateOf(0) }
 
-        val menuItemAnimation = remember { Animatable(1f) }
+        val menuItemYPositionAnimation = remember { Animatable(1f) }
+        val menuItemXPositionAnimation = remember { Animatable(1f) }
         val scope = rememberCoroutineScope()
 
         val screenWidth =
@@ -103,9 +101,9 @@ fun BottomMenuScreen() {
             rememberVectorPainter(image = menuItem.imageBitmap)
         }
 
-        val menuIconSize = 60f
-        val menuItemBackgroundCircleRadius = menuIconSize * 1.2f
-        val indentationHeight = 120f
+        val menuIconSize = with(LocalDensity.current) { 30.dp.toPx() }
+        val menuItemBackgroundCircleRadius = with(LocalDensity.current) { 33.dp.toPx() }
+        val indentationHeight = with(LocalDensity.current) { 45.dp.toPx() }
 
         Canvas(
             modifier = Modifier
@@ -131,14 +129,25 @@ fun BottomMenuScreen() {
                                         if (selectedItemIndex != index) {
                                             previouslySelectedItemIndex = selectedItemIndex
                                             selectedItemIndex = index
-                                            menuItemAnimation.snapTo(0f)
-                                            menuItemAnimation.animateTo(
-                                                targetValue = 1f,
-                                                animationSpec = tween(
-                                                    durationMillis = 600,
-                                                    easing = LinearOutSlowInEasing
+                                            launch {
+                                                menuItemYPositionAnimation.snapTo(0f)
+                                                menuItemYPositionAnimation.animateTo(
+                                                    targetValue = 1f,
+                                                    animationSpec = tween(
+                                                        durationMillis = 400,
+                                                        easing = LinearOutSlowInEasing
+                                                    )
                                                 )
-                                            )
+                                            }
+                                            launch {
+                                                menuItemXPositionAnimation.snapTo(0f)
+                                                menuItemXPositionAnimation.animateTo(
+                                                    targetValue = 1f,
+                                                    animationSpec = tween(
+                                                        durationMillis = 700,
+                                                    )
+                                                )
+                                            }
                                         }
                                     }
                                 }
@@ -148,6 +157,8 @@ fun BottomMenuScreen() {
                 }
         ) {
             drawMenuBackground(indentationWidth, xTranslation, indentationHeight)
+
+            val isOddItemCount = menuItemsCount % 2 != 0
 
             menuItems.forEachIndexed { index, item ->
                 val menuItemXPosition =
@@ -166,10 +177,43 @@ fun BottomMenuScreen() {
                 }
 
                 val circleTop =
-                    circleStartTop + (circleTargetTop - circleStartTop) * menuItemAnimation.value
+                    circleStartTop + (circleTargetTop - circleStartTop) * menuItemYPositionAnimation.value
+
+                val circleStartLeft =
+                    if (isOddItemCount && index == menuItems.size / 2) {
+                        menuItemXPosition - menuItemBackgroundCircleRadius / 2
+                    } else if (index == selectedItemIndex && selectedItemIndex != previouslySelectedItemIndex) {
+                        if (selectedItemIndex > previouslySelectedItemIndex) {
+                            // Animate enter translation from right to left
+                            menuItemXPosition
+                        } else {
+                            // Animate enter translation from left to right
+                            menuItemXPosition - menuItemBackgroundCircleRadius
+                        }
+                    } else {
+                        menuItemXPosition - menuItemBackgroundCircleRadius / 2
+                    }
+
+                val circleEndLeft =
+                    if (isOddItemCount && index == menuItems.size / 2) {
+                        menuItemXPosition - menuItemBackgroundCircleRadius / 2
+                    } else if (index == previouslySelectedItemIndex && selectedItemIndex != previouslySelectedItemIndex) {
+                        if (selectedItemIndex > previouslySelectedItemIndex) {
+                            // Animate exit translation to left
+                            menuItemXPosition - menuItemBackgroundCircleRadius
+                        } else {
+                            // Animate exit translation to right
+                            menuItemXPosition + menuItemBackgroundCircleRadius / 2
+                        }
+                    } else {
+                        menuItemXPosition - menuItemBackgroundCircleRadius / 2
+                    }
+
+                val circleLeft =
+                    circleStartLeft + (circleEndLeft - circleStartLeft) * menuItemXPositionAnimation.value
 
                 translate(
-                    left = menuItemXPosition - menuItemBackgroundCircleRadius / 2,
+                    left = circleLeft,
                     top = circleTop
                 ) {
                     drawCircle(
@@ -189,7 +233,7 @@ fun BottomMenuScreen() {
                     iconSize = menuIconSize,
                     indentationHeight = indentationHeight,
                     selectedItemIndex = selectedItemIndex,
-                    itemAnimationFraction = menuItemAnimation.value,
+                    itemAnimationFraction = menuItemYPositionAnimation.value,
                     itemXPosition = menuItemXPosition
                 )
             }
