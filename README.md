@@ -11,20 +11,23 @@ Certain recordings featured here may experience lags due to recording quality an
 ## 3. Custom donut graph transition
 https://github.com/adriankremski/ComposePlayground/assets/281360/5dc1c156-237c-44dd-99aa-7719fa713bf0
 
-## 4. Calendar
+## 4. Animated Bottom Menu
+[bottom_menu.webm](https://github.com/adriankremski/ComposePlayground/assets/281360/1cd9b262-3b36-4bed-8879-28f1ad221780)
+
+## 5. Calendar
 [calendar.webm](https://github.com/adriankremski/ComposePlayground/assets/281360/dff3c9cc-85bd-4430-908b-abcda58f089b)
 
-## 5. Pie Chart
+## 6. Pie Chart
 [pie_chart.webm](https://github.com/adriankremski/ComposePlayground/assets/281360/67bffa3c-cd7a-4ba2-ae48-9a870c46fbb4)
 
-## 6. Steps list
+## 7. Steps list
 [steps_list.webm](https://github.com/adriankremski/ComposePlayground/assets/281360/e7704b41-20cb-4628-bc80-d750b03cf7a8)
 
-## 7. List with header and footer positioned dynamically
+## 8. List with header and footer positioned dynamically
 https://github.com/adriankremski/ComposePlayground/assets/281360/6674472a-58b7-4d84-9dec-bbbd0ed48026
 
-## 8. List animations
+## 9. List animations
 [list_animations.webm](https://github.com/adriankremski/ComposePlayground/assets/281360/a7b3500e-937b-44c7-a8f5-0ee47fc8f22a)
 
-## 9. Animated graph
+## 10. Animated graph
 https://github.com/adriankremski/ComposePlayground/assets/281360/6d916fb3-4e0b-4e84-89ab-44b897c8680c
