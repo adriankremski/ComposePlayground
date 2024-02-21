@@ -41,7 +41,7 @@ import kotlinx.coroutines.launch
 
 val widgetBackgroundColor = Color(0xFF313131)
 val buttonColor = Color(0xFF5CAE9D)
-val screenBackgroundColor = Color.LightGray.copy(alpha = 0.5f)
+private val screenBackgroundColor = Color.LightGray.copy(alpha = 0.5f)
 
 @Composable
 fun PhotoPickerScreen() {

@@ -18,6 +18,7 @@ import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.res.painterResource
 import com.github.snuffix.composeplayground.R
 
+private val screenBackgroundColor = Color.LightGray.copy(alpha = 0.5f)
 @Composable
 fun ActionButton(
     modifier: Modifier = Modifier,

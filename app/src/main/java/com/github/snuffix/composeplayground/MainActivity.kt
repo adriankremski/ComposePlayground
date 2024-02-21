@@ -20,6 +20,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.github.snuffix.composeplayground.bottom_menu.BottomMenuScreen
 import com.github.snuffix.composeplayground.bottom_menu.PhotoPickerScreen
 import com.github.snuffix.composeplayground.calendar.CalendarScreen
 import com.github.snuffix.composeplayground.graphs.GradientLegend
@@ -101,23 +102,24 @@ class MainActivity : ComponentActivity() {
                         }
 
                         null -> {
-                            Column(
-                                modifier = Modifier
-                                    .fillMaxSize()
-                                    .padding(8.dp),
-                                verticalArrangement = Arrangement.spacedBy(8.dp)
-                            ) {
-                                Screen.values().forEach { screen ->
-                                    Button(
-                                        onClick = {
-                                            selectedScreen.value = screen
-                                        },
-                                        modifier = Modifier.fillMaxWidth()
-                                    ) {
-                                        Text(screen.name)
-                                    }
-                                }
-                            }
+                            BottomMenuScreen()
+//                            Column(
+//                                modifier = Modifier
+//                                    .fillMaxSize()
+//                                    .padding(8.dp),
+//                                verticalArrangement = Arrangement.spacedBy(8.dp)
+//                            ) {
+//                                Screen.values().forEach { screen ->
+//                                    Button(
+//                                        onClick = {
+//                                            selectedScreen.value = screen
+//                                        },
+//                                        modifier = Modifier.fillMaxWidth()
+//                                    ) {
+//                                        Text(screen.name)
+//                                    }
+//                                }
+//                            }
                         }
                     }
                 }
