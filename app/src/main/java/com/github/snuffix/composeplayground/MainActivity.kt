@@ -101,25 +101,28 @@ class MainActivity : ComponentActivity() {
                             WeatherScreen()
                         }
 
-                        null -> {
+                        Screen.AnimatedBottomMenu -> {
                             BottomMenuScreen()
-//                            Column(
-//                                modifier = Modifier
-//                                    .fillMaxSize()
-//                                    .padding(8.dp),
-//                                verticalArrangement = Arrangement.spacedBy(8.dp)
-//                            ) {
-//                                Screen.values().forEach { screen ->
-//                                    Button(
-//                                        onClick = {
-//                                            selectedScreen.value = screen
-//                                        },
-//                                        modifier = Modifier.fillMaxWidth()
-//                                    ) {
-//                                        Text(screen.name)
-//                                    }
-//                                }
-//                            }
+                        }
+
+                        null -> {
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .padding(8.dp),
+                                verticalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                Screen.values().forEach { screen ->
+                                    Button(
+                                        onClick = {
+                                            selectedScreen.value = screen
+                                        },
+                                        modifier = Modifier.fillMaxWidth()
+                                    ) {
+                                        Text(screen.name)
+                                    }
+                                }
+                            }
                         }
                     }
                 }
@@ -141,7 +144,8 @@ enum class Screen {
     PieChart,
     ProcessAnimation,
     PhotoPickerScreen,
-    WeatherScreen
+    WeatherScreen,
+    AnimatedBottomMenu
 }
 
 @Composable

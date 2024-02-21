@@ -262,27 +262,28 @@ private fun DrawScope.drawItemBackgroundCircle(
     menuItemXPositionAnimationFraction: Float,
     menuItemXPosition: Float,
 ) {
-    val circleStartTop = if (index == previouslySelectedItemIndex) {
+    val startTop = if (index == previouslySelectedItemIndex) {
         0f - menuItemBackgroundCircleRadius / 2
     } else {
         indentationHeight / 2
     }
 
-    val circleTargetTop = if (index == selectedItemIndex) {
+    val targetTop = if (index == selectedItemIndex) {
         0f - menuItemBackgroundCircleRadius / 2
     } else {
         indentationHeight / 2
     }
 
-    val circleTop =
-        circleStartTop + (circleTargetTop - circleStartTop) * menuItemYPositionAnimationFraction
+    val top =
+        startTop + (targetTop - startTop) * menuItemYPositionAnimationFraction
 
     val isOddItemCount = itemsCount % 2 != 0
 
-    val circleStartLeft =
-        if (isOddItemCount && index == itemsCount / 2) {
-            menuItemXPosition - menuItemBackgroundCircleRadius / 2
-        } else if (index == selectedItemIndex && selectedItemIndex != previouslySelectedItemIndex) {
+    val center = menuItemXPosition - menuItemBackgroundCircleRadius / 2
+    val startLeft =
+        if (isOddItemCount && index == itemsCount / 2 || selectedItemIndex == previouslySelectedItemIndex) {
+            center
+        } else if (index == selectedItemIndex) {
             if (selectedItemIndex > previouslySelectedItemIndex) {
                 if (abs(previouslySelectedItemIndex - selectedItemIndex) == itemsCount - 1) {
                     // Animate enter translation from left to right
@@ -301,13 +302,13 @@ private fun DrawScope.drawItemBackgroundCircle(
                 }
             }
         } else {
-            menuItemXPosition - menuItemBackgroundCircleRadius / 2
+            center
         }
 
-    val circleEndLeft =
-        if (isOddItemCount && index == itemsCount / 2) {
-            menuItemXPosition - menuItemBackgroundCircleRadius / 2
-        } else if (index == previouslySelectedItemIndex && selectedItemIndex != previouslySelectedItemIndex) {
+    val targetLeft =
+        if (isOddItemCount && index == itemsCount / 2 || selectedItemIndex == previouslySelectedItemIndex) {
+            center
+        } else if (index == previouslySelectedItemIndex) {
             if (selectedItemIndex > previouslySelectedItemIndex) {
                 // Animate exit translation to left
                 menuItemXPosition - menuItemBackgroundCircleRadius
@@ -316,23 +317,22 @@ private fun DrawScope.drawItemBackgroundCircle(
                 menuItemXPosition + menuItemBackgroundCircleRadius / 2
             }
         } else {
-            menuItemXPosition - menuItemBackgroundCircleRadius / 2
+            center
         }
 
-    val circleLeft =
-        circleStartLeft + (circleEndLeft - circleStartLeft) * menuItemXPositionAnimationFraction
+    val left = startLeft + (targetLeft - startLeft) * menuItemXPositionAnimationFraction
 
     if (index == selectedItemIndex || index == previouslySelectedItemIndex) {
         translate(
-            left = circleLeft,
-            top = circleTop
+            left = left,
+            top = top
         ) {
             drawCircle(
                 Color.White,
                 menuItemBackgroundCircleRadius,
                 Offset(
-                    menuItemBackgroundCircleRadius / 2,
-                    menuItemBackgroundCircleRadius / 2
+                    x = menuItemBackgroundCircleRadius / 2,
+                    y = menuItemBackgroundCircleRadius / 2
                 )
             )
         }
