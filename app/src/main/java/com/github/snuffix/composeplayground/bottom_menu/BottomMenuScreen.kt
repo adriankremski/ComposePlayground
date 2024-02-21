@@ -83,7 +83,9 @@ fun BottomMenuScreen() {
         val screenWidth =
             with(LocalContext.current) { resources.displayMetrics.widthPixels.toFloat() }
 
-        val indentationWidth = screenWidth / (menuItemsCount - 2)
+        val indentationWidth = screenWidth / (menuItemsCount - 2) - with(
+            LocalDensity.current
+        ) { 20.dp.toPx() }
 
         val menuItemPosition =
             indentationWidth / 2 + selectedItemIndex * (screenWidth - indentationWidth / 2) / menuItemsCount
@@ -109,15 +111,15 @@ fun BottomMenuScreen() {
         val menuItemsBitmaps = menuItems.map { menuItem ->
             rememberVectorPainter(image = menuItem.imageBitmap)
         }
-
-        val menuIconSize = with(LocalDensity.current) { 30.dp.toPx() }
-        val menuItemBackgroundCircleRadius = with(LocalDensity.current) { 33.dp.toPx() }
-        val indentationHeight = with(LocalDensity.current) { 45.dp.toPx() }
+        val menuIconSize = with(LocalDensity.current) { 24.dp.toPx() }
+        val menuItemBackgroundCircleRadius = with(LocalDensity.current) { 28.dp.toPx() }
+        val indentationHeight = with(LocalDensity.current) { 35.dp.toPx() }
+        val menuHeight = 60.dp
 
         Canvas(
             modifier = Modifier
                 .align(Alignment.BottomCenter)
-                .height(80.dp)
+                .height(menuHeight)
                 .fillMaxWidth()
                 .pointerInput(Unit) {
                     fun getTouchedItemIndex(offset: Offset): Int? {
