@@ -25,6 +25,7 @@ import androidx.compose.ui.unit.dp
 import com.github.snuffix.composeplayground.bottom_menu.BottomMenuScreen
 import com.github.snuffix.composeplayground.bottom_menu.PhotoPickerScreen
 import com.github.snuffix.composeplayground.calendar.CalendarScreen
+import com.github.snuffix.composeplayground.calendar_list.CalendarList
 import com.github.snuffix.composeplayground.graphs.GradientLegend
 import com.github.snuffix.composeplayground.graphs.donut.DonutChartScreen
 import com.github.snuffix.composeplayground.graphs.SpiralGraph
@@ -107,6 +108,10 @@ class MainActivity : ComponentActivity() {
                             BottomMenuScreen()
                         }
 
+                        Screen.CalendarList -> {
+                            CalendarList()
+                        }
+
                         null -> {
                             Column(
                                 modifier = Modifier
@@ -148,7 +153,8 @@ enum class Screen {
     ProcessAnimation,
     PhotoPickerScreen,
     WeatherScreen,
-    AnimatedBottomMenu
+    AnimatedBottomMenu,
+    CalendarList
 }
 
 @Composable
