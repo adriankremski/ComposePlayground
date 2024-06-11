@@ -31,3 +31,6 @@ https://github.com/adriankremski/ComposePlayground/assets/281360/6674472a-58b7-4
 
 ## 10. Animated graph
 https://github.com/adriankremski/ComposePlayground/assets/281360/6d916fb3-4e0b-4e84-89ab-44b897c8680c
+
+## 11. Animated Calendar List
+[calendar_list.webm](https://github.com/adriankremski/ComposePlayground/assets/281360/0ffba4c7-a6b5-4588-be37-3556cc60bc72)
