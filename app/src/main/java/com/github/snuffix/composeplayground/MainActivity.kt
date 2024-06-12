@@ -29,6 +29,7 @@ import com.github.snuffix.composeplayground.calendar_list.CalendarList
 import com.github.snuffix.composeplayground.graphs.GradientLegend
 import com.github.snuffix.composeplayground.graphs.donut.DonutChartScreen
 import com.github.snuffix.composeplayground.graphs.SpiralGraph
+import com.github.snuffix.composeplayground.login.AuthScreen
 import com.github.snuffix.composeplayground.process.ProcessAnimationScreen
 import com.github.snuffix.composeplayground.ui.theme.ComposePlaygroundTheme
 import com.github.snuffix.composeplayground.weather.WeatherScreen
@@ -112,25 +113,30 @@ class MainActivity : ComponentActivity() {
                             CalendarList()
                         }
 
+                        Screen.LoginScreen -> {
+                            AuthScreen()
+                        }
+
                         null -> {
-                            Column(
-                                modifier = Modifier
-                                    .fillMaxSize()
-                                    .verticalScroll(rememberScrollState())
-                                    .padding(8.dp),
-                                verticalArrangement = Arrangement.spacedBy(8.dp)
-                            ) {
-                                Screen.values().forEach { screen ->
-                                    Button(
-                                        onClick = {
-                                            selectedScreen.value = screen
-                                        },
-                                        modifier = Modifier.fillMaxWidth()
-                                    ) {
-                                        Text(screen.name)
-                                    }
-                                }
-                            }
+                            AuthScreen()
+//                            Column(
+//                                modifier = Modifier
+//                                    .fillMaxSize()
+//                                    .verticalScroll(rememberScrollState())
+//                                    .padding(8.dp),
+//                                verticalArrangement = Arrangement.spacedBy(8.dp)
+//                            ) {
+//                                Screen.values().forEach { screen ->
+//                                    Button(
+//                                        onClick = {
+//                                            selectedScreen.value = screen
+//                                        },
+//                                        modifier = Modifier.fillMaxWidth()
+//                                    ) {
+//                                        Text(screen.name)
+//                                    }
+//                                }
+//                            }
                         }
                     }
                 }
@@ -154,7 +160,8 @@ enum class Screen {
     PhotoPickerScreen,
     WeatherScreen,
     AnimatedBottomMenu,
-    CalendarList
+    CalendarList,
+    LoginScreen
 }
 
 @Composable
