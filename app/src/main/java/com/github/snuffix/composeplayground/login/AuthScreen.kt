@@ -10,21 +10,30 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.absoluteOffset
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -35,6 +44,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.graphicsLayer
@@ -48,6 +58,7 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.lerp
 import androidx.compose.ui.unit.sp
+import com.github.snuffix.composeplayground.bottom_menu.buttonColor
 import com.github.snuffix.composeplayground.calculatePointAngleOnCircle
 import kotlin.math.abs
 import kotlin.math.cos
@@ -57,6 +68,8 @@ import kotlin.math.sin
 import kotlin.math.sqrt
 
 val registrationBackgroundColor = Color(0xFFD13B54)
+val formBackgroundColor = Color(0xFFF4F4F4)
+val loginInputUnfocusedColor = Color(0xFFB9B9B9)
 
 @Composable
 fun AuthScreen() {
@@ -64,9 +77,9 @@ fun AuthScreen() {
     val screenHeight = with(LocalContext.current) { resources.displayMetrics.heightPixels }
     val cardWidth = 300.dp
     val cardWidthInPixels = with(LocalDensity.current) { cardWidth.toPx() }
-    val cardHeight = 400.dp
+    val cardHeight = 350.dp
     val cardHeightInPixels = with(LocalDensity.current) { cardHeight.toPx() }
-    val registrationButtonSize = 100.dp
+    val registrationButtonSize = 80.dp
     val registrationButtonSizeInPixels =
         with(LocalDensity.current) { registrationButtonSize.toPx() }
 
@@ -113,12 +126,9 @@ fun AuthScreen() {
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color.LightGray.copy(alpha = 0.5f))
     ) {
         val formPadding = 16.dp
         val formPaddingInPixels = with(LocalDensity.current) { formPadding.toPx() }
-
-        val formTitleSize = 24.sp
 
         val offset = lerp(0.dp, 10.dp, closeButtonTransitionAnim.value)
         val offsetInPixels = with(LocalDensity.current) { offset.toPx() }
@@ -135,10 +145,12 @@ fun AuthScreen() {
                     )
                 }
                 .graphicsLayer {
-                    alpha = (1.7 - closeButtonTransitionAnim.value).coerceAtMost(1.0).toFloat()
+                    alpha = (1.7 - closeButtonTransitionAnim.value)
+                        .coerceAtMost(1.0)
+                        .toFloat()
                 },
             colors = CardDefaults.cardColors(
-                containerColor = Color.White
+                containerColor = formBackgroundColor
             ),
             shape = RoundedCornerShape(8.dp),
             elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
@@ -149,14 +161,30 @@ fun AuthScreen() {
                 exit = fadeOut()
             ) {
                 Column(
-                    modifier = Modifier.padding(formPadding)
+                    modifier = Modifier
+                        .padding(formPadding)
+                        .fillMaxSize(),
+                    verticalArrangement = Arrangement.SpaceBetween
                 ) {
-                    Text(
-                        text = "LOGIN",
-                        fontSize = formTitleSize,
-                        fontFamily = FontFamily.SansSerif,
-                        color = registrationBackgroundColor,
-                        fontWeight = FontWeight.SemiBold
+                    FormTitleLabel(text = "LOGIN", textColor = registrationBackgroundColor)
+
+                    Column {
+                        FormInputField(
+                            text = "Email",
+                            unfocusedColor = loginInputUnfocusedColor,
+                            focusedColor = registrationBackgroundColor
+                        )
+                        FormInputField(
+                            text = "Password",
+                            unfocusedColor = loginInputUnfocusedColor,
+                            focusedColor = registrationBackgroundColor
+                        )
+                    }
+
+                    FormButton(
+                        text = "GO",
+                        textColor = registrationBackgroundColor,
+                        outlineColor = registrationBackgroundColor
                     )
                 }
             }
@@ -212,15 +240,35 @@ fun AuthScreen() {
                     visible = registrationFormVisible
                 ) {
                     Column(
-                        modifier = Modifier.padding(formPadding)
+                        modifier = Modifier
+                            .padding(formPadding)
+                            .fillMaxSize(),
+                        verticalArrangement = Arrangement.SpaceBetween
                     ) {
-                        Text(
+                        FormTitleLabel(
                             text = "REGISTER",
-                            fontSize = formTitleSize,
-                            fontFamily = FontFamily.SansSerif,
-                            color = Color.White,
-                            fontWeight = FontWeight.SemiBold
+                            textColor = Color.White
                         )
+
+                        Column {
+                            FormInputField(
+                                text = "Email",
+                            )
+                            FormInputField(text = "Password")
+                            FormInputField(text = "Confirm Password")
+                        }
+
+                        Button(
+                            modifier = Modifier.fillMaxWidth(),
+                            onClick = { /*TODO*/ },
+                            colors = ButtonDefaults.outlinedButtonColors(
+                                containerColor = Color.White,
+                                contentColor = registrationBackgroundColor
+                            ),
+                            shape = RoundedCornerShape(8.dp)
+                        ) {
+                            Text("NEXT")
+                        }
                     }
                 }
 
@@ -337,5 +385,71 @@ fun AuthScreen() {
                 )
             }
         }
+    }
+}
+
+@Composable
+fun FormTitleLabel(text: String, textColor: Color) {
+    Text(
+        text = text,
+        fontSize = 24.sp,
+        fontFamily = FontFamily.SansSerif,
+        color = textColor,
+        fontWeight = FontWeight.SemiBold
+    )
+}
+
+@Composable
+fun FormInputField(
+    text: String,
+    inputColor: Color = Color.White,
+    focusedColor: Color = inputColor,
+    unfocusedColor: Color = inputColor
+) {
+    OutlinedTextField(
+        colors = OutlinedTextFieldDefaults.colors(
+            focusedTextColor = focusedColor,
+            focusedBorderColor = focusedColor,
+            focusedLabelColor = focusedColor,
+            cursorColor = focusedColor,
+            unfocusedLabelColor = unfocusedColor,
+            unfocusedTextColor = unfocusedColor,
+            unfocusedBorderColor = unfocusedColor,
+            unfocusedLeadingIconColor = Color.White
+        ),
+        value = "",
+        label = {
+            Text(text)
+        },
+        onValueChange = {
+
+        })
+}
+
+@Composable
+fun FormButton(
+    text: String,
+    textColor: Color,
+    outlineColor: Color,
+) {
+    OutlinedButton(
+        modifier = Modifier.fillMaxWidth(),
+        onClick = { /*TODO*/ },
+        colors = ButtonDefaults.outlinedButtonColors(
+            containerColor = Color.Transparent,
+            contentColor = textColor
+        ),
+        border = ButtonDefaults.outlinedButtonBorder.copy(
+            width = 2.dp,
+            brush = Brush.linearGradient(
+                listOf(
+                    outlineColor,
+                    outlineColor
+                )
+            )
+        ),
+        shape = RoundedCornerShape(8.dp)
+    ) {
+        Text(text)
     }
 }
