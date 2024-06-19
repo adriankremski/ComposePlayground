@@ -13,6 +13,7 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.absoluteOffset
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -22,9 +23,9 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -33,7 +34,6 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -42,7 +42,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -50,6 +49,7 @@ import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInParent
+import androidx.compose.ui.layout.positionInRoot
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontFamily
@@ -58,7 +58,6 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.lerp
 import androidx.compose.ui.unit.sp
-import com.github.snuffix.composeplayground.bottom_menu.buttonColor
 import com.github.snuffix.composeplayground.calculatePointAngleOnCircle
 import kotlin.math.abs
 import kotlin.math.cos
@@ -98,6 +97,7 @@ fun AuthScreen() {
     }
 
     var registerButtonPosition by remember { mutableStateOf(Offset(0f, 0f)) }
+    var closeDummyButtonPosition by remember { mutableStateOf(Offset(0f, 0f)) }
 
     var transitionToRegisterScreen by remember { mutableStateOf(false) }
     var registrationScreenVisible by remember { mutableStateOf(false) }
@@ -166,7 +166,26 @@ fun AuthScreen() {
                         .fillMaxSize(),
                     verticalArrangement = Arrangement.SpaceBetween
                 ) {
-                    FormTitleLabel(text = "LOGIN", textColor = registrationBackgroundColor)
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        FormTitleLabel(text = "LOGIN", textColor = registrationBackgroundColor)
+
+                        Image(
+                            modifier = Modifier
+                                .size(40.dp)
+                                .graphicsLayer {
+                                    rotationZ = 45f
+                                }
+                                .onGloballyPositioned {
+                                    closeDummyButtonPosition = it.positionInRoot()
+                                },
+                            colorFilter = ColorFilter.tint(formBackgroundColor),
+                            imageVector = Icons.Filled.Add,
+                            contentDescription = ""
+                        )
+                    }
 
                     Column {
                         FormInputField(
@@ -191,6 +210,10 @@ fun AuthScreen() {
 
         }
 
+        val registrationIconSize = 40.dp
+        val registrationIconSizeInPixels =
+            with(LocalDensity.current) { registrationIconSize.toPx() }
+
         if (registrationScreenVisible) {
             Box(
                 modifier = Modifier
@@ -198,10 +221,6 @@ fun AuthScreen() {
                     .width(cardWidth)
                     .height(cardHeight)
             ) {
-                val registrationIconSize = 40.dp
-                val registrationIconSizeInPixels =
-                    with(LocalDensity.current) { registrationIconSize.toPx() }
-
                 val backgroundSizeWidth =
                     lerp(registrationButtonSize, cardWidth, closeButtonTransitionAnim.value)
                 val backgroundSizeHeight =
@@ -272,40 +291,9 @@ fun AuthScreen() {
                     }
                 }
 
-                Image(
-                    modifier = Modifier
-                        .size(40.dp)
-                        .offset {
-                            // TODO, Better way to calculate this
-                            val x =
-                                (registerButtonPosition.x - registrationIconSizeInPixels / 2 - ((screenWidth - cardWidthInPixels) / 2)).toInt()
-                            val y =
-                                registerButtonPosition.y - registrationIconSizeInPixels / 2 - ((screenHeight - cardHeightInPixels) / 2) + registrationButtonSizeInPixels / 2 + registrationIconSizeInPixels - 20
-
-                            val initialPosition = IntOffset(x, y.toInt())
-
-                            val finalPosition = IntOffset(
-                                (cardWidthInPixels - registrationIconSizeInPixels.toInt() - formPaddingInPixels).toInt(),
-                                (formPaddingInPixels).toInt()
-                            )
-
-                            lerp(initialPosition, finalPosition, closeButtonTransitionAnim.value)
-                        }
-                        .graphicsLayer {
-                            rotationZ = 45f
-                        }
-                        .clickable(
-                            interactionSource = remember { MutableInteractionSource() },
-                            indication = null
-                        ) {
-                            transitionToRegisterScreen = false
-                        },
-                    colorFilter = ColorFilter.tint(Color.White),
-                    imageVector = Icons.Filled.Add,
-                    contentDescription = ""
-                )
             }
         }
+
 
 
         if (!registrationScreenVisible) {
@@ -313,41 +301,38 @@ fun AuthScreen() {
                 modifier = Modifier
                     .size(registrationButtonSize)
                     .absoluteOffset {
-                        val initialPosition = registrationButtonInitialPosition
-                        val finalPosition = registrationButtonFinalPosition
-
                         val circleCenter = Offset(
                             (min(
-                                initialPosition.x,
-                                finalPosition.x
-                            ) + abs(initialPosition.x - finalPosition.x) / 2),
+                                registrationButtonInitialPosition.x,
+                                registrationButtonFinalPosition.x
+                            ) + abs(registrationButtonInitialPosition.x - registrationButtonFinalPosition.x) / 2),
                             (min(
-                                initialPosition.y,
-                                finalPosition.y
-                            ) + abs(initialPosition.y - finalPosition.y) / 2)
+                                registrationButtonInitialPosition.y,
+                                registrationButtonFinalPosition.y
+                            ) + abs(registrationButtonInitialPosition.y - registrationButtonFinalPosition.y) / 2)
                         )
 
                         val radius =
                             sqrt(
-                                (initialPosition.x - circleCenter.x)
+                                (registrationButtonInitialPosition.x - circleCenter.x)
                                     .toDouble()
-                                    .pow(2.0) + (initialPosition.y - circleCenter.y)
+                                    .pow(2.0) + (registrationButtonInitialPosition.y - circleCenter.y)
                                     .toDouble()
                                     .pow(2.0)
                             )
 
                         val initialPositionAngle = calculatePointAngleOnCircle(
                             point = Offset(
-                                initialPosition.x,
-                                initialPosition.y
+                                registrationButtonInitialPosition.x,
+                                registrationButtonInitialPosition.y
                             ),
                             circleCenter = circleCenter
                         )
 
                         val finalPositionAngle = calculatePointAngleOnCircle(
                             point = Offset(
-                                finalPosition.x,
-                                finalPosition.y
+                                registrationButtonFinalPosition.x,
+                                registrationButtonFinalPosition.y
                             ),
                             circleCenter = circleCenter
                         )
@@ -384,6 +369,41 @@ fun AuthScreen() {
                     contentDescription = ""
                 )
             }
+        } else {
+            val addIconSize = 40.dp
+            val addIconSizeInPixels = with(LocalDensity.current) { addIconSize.toPx() }
+
+            Image(
+                modifier = Modifier
+                    .size(40.dp)
+                    .offset {
+                        val x =
+                            registrationButtonFinalPosition.x + registrationButtonSizeInPixels / 2 - addIconSizeInPixels / 2
+                        val y =
+                            registrationButtonFinalPosition.y + registrationButtonSizeInPixels / 2 - addIconSizeInPixels / 2
+
+                        val initialPosition = IntOffset(x.toInt(), y.toInt())
+
+                        val finalPosition = IntOffset(
+                            closeDummyButtonPosition.x.toInt() - addIconSizeInPixels.toInt() / 2,
+                            closeDummyButtonPosition.y.toInt() + addIconSizeInPixels.toInt() / 4
+                        )
+
+                        lerp(initialPosition, finalPosition, closeButtonTransitionAnim.value)
+                    }
+                    .graphicsLayer {
+                        rotationZ = 45f
+                    }
+                    .clickable(
+                        interactionSource = remember { MutableInteractionSource() },
+                        indication = null
+                    ) {
+                        transitionToRegisterScreen = false
+                    },
+                colorFilter = ColorFilter.tint(Color.White),
+                imageVector = Icons.Filled.Add,
+                contentDescription = ""
+            )
         }
     }
 }
