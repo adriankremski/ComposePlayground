@@ -34,3 +34,7 @@ https://github.com/adriankremski/ComposePlayground/assets/281360/6d916fb3-4e0b-4
 
 ## 11. Animated Calendar List
 [calendar_list.webm](https://github.com/adriankremski/ComposePlayground/assets/281360/0ffba4c7-a6b5-4588-be37-3556cc60bc72)
+
+## 12. Animated Auth screen
+[login_screen.webm](https://github.com/adriankremski/ComposePlayground/assets/281360/11daaf96-69b4-4b13-a05e-b2ab84a34db0)
+
