@@ -25,7 +25,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -48,7 +47,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.onGloballyPositioned
-import androidx.compose.ui.layout.positionInParent
 import androidx.compose.ui.layout.positionInRoot
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
@@ -74,21 +72,21 @@ val loginInputUnfocusedColor = Color(0xFFB9B9B9)
 fun AuthScreen() {
     val screenWidth = with(LocalContext.current) { resources.displayMetrics.widthPixels }
     val screenHeight = with(LocalContext.current) { resources.displayMetrics.heightPixels }
+
     val cardWidth = 300.dp
     val cardWidthInPixels = with(LocalDensity.current) { cardWidth.toPx() }
     val cardHeight = 350.dp
     val cardHeightInPixels = with(LocalDensity.current) { cardHeight.toPx() }
+
     val registrationButtonSize = 80.dp
     val registrationButtonSizeInPixels =
         with(LocalDensity.current) { registrationButtonSize.toPx() }
-
     val registrationButtonInitialPosition = remember {
         Offset(
             x = ((screenWidth / 2) - registrationButtonSizeInPixels / 2).toInt() + cardWidthInPixels / 2,
             y = ((screenHeight / 2) - registrationButtonSizeInPixels / 2).toInt() - cardHeightInPixels / 4,
         )
     }
-
     val registrationButtonFinalPosition = remember {
         Offset(
             x = registrationButtonInitialPosition.x - registrationButtonSizeInPixels,
@@ -96,7 +94,7 @@ fun AuthScreen() {
         )
     }
 
-    var registerButtonPosition by remember { mutableStateOf(Offset(0f, 0f)) }
+    // Position of dummy close button used to animate the real close button
     var closeDummyButtonPosition by remember { mutableStateOf(Offset(0f, 0f)) }
 
     var transitionToRegisterScreen by remember { mutableStateOf(false) }
@@ -104,8 +102,16 @@ fun AuthScreen() {
     var registrationFormVisible by remember { mutableStateOf(false) }
     var loginFormVisible by remember { mutableStateOf(true) }
 
+    // Initial register button transition
     val registerButtonTransitionAnim = remember { Animatable(0f) }
+
+    // Close button transition started after registration button is done animating
     val closeButtonTransitionAnim = remember { Animatable(0f) }
+
+    val formPadding = 16.dp
+
+    // Login screen offset is used when the form is moved slightly behind
+    val loginScreenOffset = lerp(0.dp, 10.dp, closeButtonTransitionAnim.value)
 
     LaunchedEffect(key1 = transitionToRegisterScreen) {
         if (transitionToRegisterScreen) {
@@ -127,11 +133,7 @@ fun AuthScreen() {
         modifier = Modifier
             .fillMaxSize()
     ) {
-        val formPadding = 16.dp
-        val formPaddingInPixels = with(LocalDensity.current) { formPadding.toPx() }
-
-        val offset = lerp(0.dp, 10.dp, closeButtonTransitionAnim.value)
-        val offsetInPixels = with(LocalDensity.current) { offset.toPx() }
+        val loginScreenOffsetInPixels = with(LocalDensity.current) { loginScreenOffset.toPx() }
 
         Card(
             modifier = Modifier
@@ -140,8 +142,8 @@ fun AuthScreen() {
                 .height(cardHeight)
                 .offset {
                     IntOffset(
-                        x = offsetInPixels.toInt(),
-                        y = (-offsetInPixels).toInt()
+                        x = loginScreenOffsetInPixels.toInt(),
+                        y = (-loginScreenOffsetInPixels).toInt()
                     )
                 }
                 .graphicsLayer {
@@ -170,10 +172,15 @@ fun AuthScreen() {
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
-                        FormTitleLabel(text = "LOGIN", textColor = registrationBackgroundColor)
+                        FormTitleLabel(
+                            modifier = Modifier.align(Alignment.CenterVertically),
+                            text = "LOGIN",
+                            textColor = registrationBackgroundColor
+                        )
 
                         Image(
                             modifier = Modifier
+                                .align(Alignment.CenterVertically)
                                 .size(40.dp)
                                 .graphicsLayer {
                                     rotationZ = 45f
@@ -210,10 +217,6 @@ fun AuthScreen() {
 
         }
 
-        val registrationIconSize = 40.dp
-        val registrationIconSizeInPixels =
-            with(LocalDensity.current) { registrationIconSize.toPx() }
-
         if (registrationScreenVisible) {
             Box(
                 modifier = Modifier
@@ -234,11 +237,11 @@ fun AuthScreen() {
                         .height(backgroundSizeHeight)
                         .offset {
                             val x =
-                                (registerButtonPosition.x - ((screenWidth - cardWidthInPixels) / 2)).toInt() - registrationButtonSizeInPixels / 2
+                                (registrationButtonFinalPosition.x - ((screenWidth - cardWidthInPixels) / 2)).toInt()
                             val y =
-                                registerButtonPosition.y - ((screenHeight - cardHeightInPixels) / 2) + registrationButtonSizeInPixels / 2
+                                registrationButtonFinalPosition.y - ((screenHeight - cardHeightInPixels) / 2) + registrationButtonSizeInPixels / 6 // magic value, not sure what causes slight offset
 
-                            val initialPosition = IntOffset(x.toInt(), y.toInt() - 40)
+                            val initialPosition = IntOffset(x, y.toInt())
 
                             val finalPosition = IntOffset(0, 0)
                             lerp(initialPosition, finalPosition, closeButtonTransitionAnim.value)
@@ -264,10 +267,25 @@ fun AuthScreen() {
                             .fillMaxSize(),
                         verticalArrangement = Arrangement.SpaceBetween
                     ) {
-                        FormTitleLabel(
-                            text = "REGISTER",
-                            textColor = Color.White
-                        )
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            FormTitleLabel(
+                                modifier = Modifier.align(Alignment.CenterVertically),
+                                text = "REGISTER",
+                                textColor = Color.White
+                            )
+
+                            Image(
+                                modifier = Modifier
+                                    .align(Alignment.CenterVertically)
+                                    .size(40.dp),
+                                colorFilter = ColorFilter.tint(registrationBackgroundColor),
+                                imageVector = Icons.Filled.Add,
+                                contentDescription = ""
+                            )
+                        }
 
                         Column {
                             FormInputField(
@@ -295,6 +313,8 @@ fun AuthScreen() {
         }
 
 
+        val addIconSize = 40.dp
+        val addIconSizeInPixels = with(LocalDensity.current) { addIconSize.toPx() }
 
         if (!registrationScreenVisible) {
             Box(
@@ -356,13 +376,10 @@ fun AuthScreen() {
                     ) {
                         transitionToRegisterScreen = true
                     }
-                    .onGloballyPositioned {
-                        registerButtonPosition = it.positionInParent()
-                    }
             ) {
                 Image(
                     modifier = Modifier
-                        .size(40.dp)
+                        .size(addIconSize)
                         .align(Alignment.Center),
                     colorFilter = ColorFilter.tint(Color.White),
                     imageVector = Icons.Filled.Add,
@@ -370,12 +387,9 @@ fun AuthScreen() {
                 )
             }
         } else {
-            val addIconSize = 40.dp
-            val addIconSizeInPixels = with(LocalDensity.current) { addIconSize.toPx() }
-
             Image(
                 modifier = Modifier
-                    .size(40.dp)
+                    .size(addIconSize)
                     .offset {
                         val x =
                             registrationButtonFinalPosition.x + registrationButtonSizeInPixels / 2 - addIconSizeInPixels / 2
@@ -409,8 +423,9 @@ fun AuthScreen() {
 }
 
 @Composable
-fun FormTitleLabel(text: String, textColor: Color) {
+fun FormTitleLabel(modifier: Modifier, text: String, textColor: Color) {
     Text(
+        modifier = modifier,
         text = text,
         fontSize = 24.sp,
         fontFamily = FontFamily.SansSerif,
