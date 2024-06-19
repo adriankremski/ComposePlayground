@@ -118,25 +118,24 @@ class MainActivity : ComponentActivity() {
                         }
 
                         null -> {
-                            AuthScreen()
-//                            Column(
-//                                modifier = Modifier
-//                                    .fillMaxSize()
-//                                    .verticalScroll(rememberScrollState())
-//                                    .padding(8.dp),
-//                                verticalArrangement = Arrangement.spacedBy(8.dp)
-//                            ) {
-//                                Screen.values().forEach { screen ->
-//                                    Button(
-//                                        onClick = {
-//                                            selectedScreen.value = screen
-//                                        },
-//                                        modifier = Modifier.fillMaxWidth()
-//                                    ) {
-//                                        Text(screen.name)
-//                                    }
-//                                }
-//                            }
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .verticalScroll(rememberScrollState())
+                                    .padding(8.dp),
+                                verticalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                Screen.values().forEach { screen ->
+                                    Button(
+                                        onClick = {
+                                            selectedScreen.value = screen
+                                        },
+                                        modifier = Modifier.fillMaxWidth()
+                                    ) {
+                                        Text(screen.name)
+                                    }
+                                }
+                            }
                         }
                     }
                 }
